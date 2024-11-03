@@ -87,21 +87,24 @@ fun Color.withTransparency(alpha: Float): Color {
 }
 
 @Composable
-fun TaskCheckBoxColors(importance: Importance): CheckboxColors {
+fun taskCheckBoxColors(importance: Importance): CheckboxColors {
     return when (importance) {
         Importance.LOW -> CheckboxDefaults.colors(
-            MaterialTheme.colorScheme.primaryContainer,
-            MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.background
+            checkedColor = MaterialTheme.colorScheme.primaryContainer,
+            uncheckedColor = MaterialTheme.colorScheme.secondaryContainer,
+            checkmarkColor = MaterialTheme.colorScheme.background
         )
 
         Importance.HIGH -> CheckboxDefaults.colors(
-            MaterialTheme.colorScheme.error,
-            MaterialTheme.colorScheme.error.withTransparency(0.16f), MaterialTheme.colorScheme.background
+            checkedColor = MaterialTheme.colorScheme.primaryContainer,
+            uncheckedColor = MaterialTheme.colorScheme.error,
+            checkmarkColor = MaterialTheme.colorScheme.background
         )
 
         Importance.MEDIUM -> CheckboxDefaults.colors(
-            MaterialTheme.colorScheme.primaryContainer,
-            MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.background
+            checkedColor = MaterialTheme.colorScheme.primaryContainer,
+            uncheckedColor = MaterialTheme.colorScheme.secondaryContainer,
+            checkmarkColor = MaterialTheme.colorScheme.background
         )
     }
 }
