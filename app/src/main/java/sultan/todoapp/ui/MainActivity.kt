@@ -22,10 +22,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxColors
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,10 +37,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -69,8 +74,7 @@ class MainActivity : ComponentActivity() {
         val paddingStart = screenWidth * 0.2f
         val paddingTop = screenWidth * 0.2f
         val viewModel: MainScreenViewModel = viewModel()
-        val todoItems = viewModel.todoItems.collectAsState().value
-        val isLoading = viewModel.isLoading.collectAsState().value
+        val todoItems by viewModel.todoItems.collectAsState()
 
 
         TodoAppTheme {
@@ -90,8 +94,9 @@ class MainActivity : ComponentActivity() {
                     }
 
                     LazyColumn {
-                        items(todoItems.toList()) { items ->
-                            TasksList(items.second, viewModel)
+                        items( todoItems.toList()){item ->
+                            TasksList(item.second, viewModel)
+
                         }
                     }
 
@@ -129,15 +134,11 @@ class MainActivity : ComponentActivity() {
 
         var checked by remember { mutableStateOf(item.isCompleted) }
 
-        Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
-            Canvas(
-                modifier = Modifier.matchParentSize()
-            ) {
-                drawCircle(
-                    color = if (item.importance == Importance.HIGH),
-                    radius = size.minDimension / 2
-                )
-            }
+        Box(modifier = Modifier.size(20.dp).background(if (item.importance == Importance.HIGH){
+            MaterialTheme.colorScheme.error.withTransparency(0.16f)
+        }
+        else MaterialTheme.colorScheme.background
+        )) {
             Checkbox(
                 checked = checked,
                 onCheckedChange = {
@@ -153,15 +154,21 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun TaskTitle(text: String, modifier: Modifier) {
-        Text(
-            text = text,
-            fontSize = 16.sp,
-            style = TextStyle(color = MaterialTheme.colorScheme.onPrimary),
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-            modifier = modifier.padding(start = 10.dp, end = 10.dp)
-        )
+    fun TaskTitle(text: String, modifier: Modifier, icon:Painter? = null, isStrikethrough: Boolean) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier =  modifier.padding(start = 10.dp, end = 10.dp)) {
+            icon?.let {
+                Icon(painter = it, contentDescription = null, tint = Color.Unspecified)
+            }
+            Text(
+                text = text,
+                fontSize = 16.sp,
+                style = TextStyle(color = MaterialTheme.colorScheme.onPrimary, textDecoration = if (isStrikethrough) TextDecoration.LineThrough else null),
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                modifier = modifier.padding(start = 5.dp)
+            )
+        }
+
     }
 
     @Composable
@@ -176,7 +183,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun TasksList(item: TodoItem, viewModel: MainScreenViewModel) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = if (item.text.length >= 10) Alignment.Top else Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             TaskCheckbox(
@@ -184,7 +191,11 @@ class MainActivity : ComponentActivity() {
                 viewModel,
                 item
             )
-            TaskTitle(item.text, modifier = Modifier.weight(1f))
+            TaskTitle(item.text, modifier = Modifier.weight(1f), if (item.importance == Importance.HIGH && !item.isCompleted) {
+                painterResource(R.drawable.icon_importance_high)
+            }
+            else null
+            , item.isCompleted)
             InfoImage()
         }
     }

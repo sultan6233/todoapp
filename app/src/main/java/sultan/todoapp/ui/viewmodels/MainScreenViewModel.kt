@@ -17,10 +17,7 @@ class MainScreenViewModel(private val todoRepository: TodoItemsRepository = Todo
     ViewModel() {
 
     private val _todoItems = MutableStateFlow<LinkedHashMap<String, TodoItem>>(linkedMapOf())
-    val todoItems: StateFlow<LinkedHashMap<String, TodoItem>> get() = _todoItems
-
-    private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    val todoItems: StateFlow<LinkedHashMap<String, TodoItem>> = _todoItems.asStateFlow()
 
     fun toggleCheckbox(item: TodoItem) {
         todoRepository.modifyItem(item)
@@ -28,7 +25,8 @@ class MainScreenViewModel(private val todoRepository: TodoItemsRepository = Todo
     }
 
     fun loadTodoItems() = viewModelScope.launch(Dispatchers.IO) {
-            _todoItems.value = todoRepository.getItems()
+        val items = todoRepository.getItems()
+            _todoItems.value = items
     }
 
     init {

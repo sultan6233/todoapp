@@ -10,10 +10,20 @@ object TodoItems {
 
     private fun generateTodoItems(): LinkedHashMap<String, TodoItem> {
         val todoItemsMap = LinkedHashMap<String, TodoItem>()
+        todoItemsMap["21"] = TodoItem(
+            id = "21",
+            text = "Prepare presentation " + Random.nextInt(),
+            importance = getRandomImportance(),
+            deadline = null,
+            isCompleted = Random.nextBoolean(),
+            createdAt = Date(),
+            modifiedAt = null
+        )
         for (i in 0..20) {
+
             todoItemsMap[i.toString()] = TodoItem(
                 id = i.toString(),
-                text = "Prepare presentation " + Random.nextInt(),
+                text = "Prepare presentation asdasdasdddddasdasdasdadassdassdadsdadasdasdjjhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhjljlkjlfhsldhglsdhgjkshgksjdhgksdhgksjdhgksdjghskjdghsdkjghsdkjhgsdkjghsdkjghsdkjghskdjghskdjghsdkjghskdjghskjdghsdkjghdskjghsdkjghsdkjghsdkjghskdjghsdkjghsdkjghsdkjghskjdghsdkjghsdkjghkjsghk " + Random.nextInt(),
                 importance = getRandomImportance(),
                 deadline = null,
                 isCompleted = Random.nextBoolean(),
