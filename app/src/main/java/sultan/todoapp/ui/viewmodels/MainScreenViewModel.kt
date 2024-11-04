@@ -16,8 +16,8 @@ import sultan.todoapp.domain.TodoItemsRepository
 class MainScreenViewModel(private val todoRepository: TodoItemsRepository = TodoItemsRepositoryImpl()) :
     ViewModel() {
 
-    private val _todoItems = MutableStateFlow<LinkedHashMap<String, TodoItem>>(linkedMapOf())
-    val todoItems: StateFlow<LinkedHashMap<String, TodoItem>> = _todoItems.asStateFlow()
+    private val _todoItems = MutableStateFlow<Map<String, TodoItem>>(mapOf())
+    val todoItems: StateFlow<Map<String, TodoItem>> = _todoItems.asStateFlow()
 
     fun toggleCheckbox(item: TodoItem) {
         todoRepository.modifyItem(item)
@@ -26,7 +26,7 @@ class MainScreenViewModel(private val todoRepository: TodoItemsRepository = Todo
 
     fun loadTodoItems() = viewModelScope.launch(Dispatchers.IO) {
         val items = todoRepository.getItems()
-            _todoItems.value = items
+        _todoItems.value = items
     }
 
     init {

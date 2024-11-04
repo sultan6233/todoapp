@@ -6,7 +6,8 @@ import java.util.Date
 import kotlin.random.Random
 
 object TodoItems {
-    val todoItemsMap = generateTodoItems()
+    val _todoItemsMap = generateTodoItems()
+    var todoItemsMap = _todoItemsMap.toMap()
 
     private fun generateTodoItems(): LinkedHashMap<String, TodoItem> {
         val todoItemsMap = LinkedHashMap<String, TodoItem>()
@@ -35,7 +36,8 @@ object TodoItems {
     }
 
     fun changeTodoItemInMap(item: TodoItem) {
-        todoItemsMap[item.id] = item.copy(isCompleted = item.isCompleted)
+        _todoItemsMap[item.id] = item.copy(isCompleted = item.isCompleted)
+        todoItemsMap = _todoItemsMap.toMap()
     }
 
     private fun getRandomImportance(): Importance {

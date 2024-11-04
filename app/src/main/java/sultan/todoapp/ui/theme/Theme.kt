@@ -21,7 +21,7 @@ import sultan.todoapp.domain.Importance
 
 private val DarkColorScheme = darkColorScheme(
     primary = BackDarkPrimary,
-    secondary = PurpleGrey80,
+    secondary = BackDarkSecondary,
     tertiary = Pink80,
     background = BackDarkPrimary,
     onPrimary = LabelDarkPrimary,
@@ -32,7 +32,7 @@ private val DarkColorScheme = darkColorScheme(
 
 private val LightColorScheme = lightColorScheme(
     primary = BackLightPrimary,
-    secondary = PurpleGrey40,
+    secondary = BackLightSecondary,
     tertiary = Pink40,
     background = BackLightPrimary,
     onPrimary = LabelLightPrimary,

@@ -5,7 +5,7 @@ import sultan.todoapp.domain.TodoItem
 import sultan.todoapp.domain.TodoItemsRepository
 
 class TodoItemsRepositoryImpl : TodoItemsRepository {
-    override suspend fun getItems(): LinkedHashMap<String, TodoItem> {
+    override suspend fun getItems(): Map<String, TodoItem> {
         return TodoItems.todoItemsMap
     }
 
