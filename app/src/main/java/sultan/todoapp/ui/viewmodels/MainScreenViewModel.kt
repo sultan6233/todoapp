@@ -19,9 +19,16 @@ class MainScreenViewModel(private val todoRepository: TodoItemsRepository = Todo
     private val _todoItems = MutableStateFlow<Map<String, TodoItem>>(mapOf())
     val todoItems: StateFlow<Map<String, TodoItem>> = _todoItems.asStateFlow()
 
+    private val _showHideVisibility = MutableStateFlow(false)
+    val showHideVisibility: StateFlow<Boolean> = _showHideVisibility.asStateFlow()
+
     fun toggleCheckbox(item: TodoItem) {
         todoRepository.modifyItem(item)
         loadTodoItems()
+    }
+
+    fun toggleShowHide(isVisible:Boolean) {
+        _showHideVisibility.value = isVisible
     }
 
     fun loadTodoItems() = viewModelScope.launch(Dispatchers.IO) {

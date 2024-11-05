@@ -28,11 +28,8 @@ import kotlin.math.roundToInt
 
 @Composable
 fun SwipeableItemWithActions(
-    isRevealed: Boolean,
     actions: @Composable RowScope.() -> Unit,
     modifier: Modifier = Modifier,
-    onExpanded: () -> Unit = {},
-    onCollapsed: () -> Unit = {},
     content: @Composable () -> Unit
 ) {
     var contextMenuWidth by remember {
@@ -43,13 +40,7 @@ fun SwipeableItemWithActions(
     }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(key1 = isRevealed, contextMenuWidth) {
-        if(isRevealed) {
-            offset.animateTo(contextMenuWidth)
-        } else {
-            offset.animateTo(0f)
-        }
-    }
+
 
     Box(
         modifier = modifier
@@ -83,14 +74,12 @@ fun SwipeableItemWithActions(
                                 offset.value >= contextMenuWidth / 2f -> {
                                     scope.launch {
                                         offset.animateTo(contextMenuWidth)
-                                        onExpanded()
                                     }
                                 }
 
                                 else -> {
                                     scope.launch {
                                         offset.animateTo(0f)
-                                        onCollapsed()
                                     }
                                 }
                             }

@@ -5,9 +5,17 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.AnchoredDraggableState
+import androidx.compose.foundation.gestures.DraggableAnchors
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,14 +25,18 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
@@ -32,6 +44,7 @@ import androidx.compose.material3.CardElevation
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxColors
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
@@ -52,6 +65,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -59,6 +73,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -112,7 +127,10 @@ class MainActivity : ComponentActivity() {
                     .padding(start = paddingStart, top = paddingStart)
             ) {
                 MyTasksTitleText()
-                DoneText("5")
+                Row {
+                    DoneText("5")
+                    ShowHideIconButton(viewModel)
+                }
 
             }
 
@@ -210,7 +228,9 @@ class MainActivity : ComponentActivity() {
     fun TaskContent(item: TodoItem, viewModel: MainScreenViewModel, firstItem: Boolean) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
             Card(
-                modifier = Modifier.fillMaxWidth(0.95f),
+                modifier = Modifier
+                    .fillMaxWidth(0.95f)
+                    .height(50.dp),
                 colors = CardColors(
                     containerColor = MaterialTheme.colorScheme.secondary,
                     disabledContentColor = MaterialTheme.colorScheme.secondary,
@@ -247,15 +267,29 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun TasksList(item: TodoItem, viewModel: MainScreenViewModel = viewModel(), firstItem: Boolean) {
-        val dismissState = rememberSwipeToDismissBoxState()
-        SwipeableItemWithActions(false, onExpanded = {}, onCollapsed = {}, actions = {
-            Text(text = "Delete")
+    fun TasksList(
+        item: TodoItem,
+        viewModel: MainScreenViewModel = viewModel(),
+        firstItem: Boolean
+    ) {
+        TaskContent(item, viewModel, firstItem)
+    }
+
+    @Composable
+    fun ShowHideIconButton(viewModel: MainScreenViewModel = viewModel()) {
+        var isVisible by remember { mutableStateOf(false) }
+
+        IconButton(onClick = {
+            viewModel.toggleShowHide(isVisible)
+            isVisible = !isVisible
         }) {
-
-            TaskContent(item, viewModel, firstItem)
+            Icon(
+                painter = if (isVisible) painterResource(R.drawable.icon_show) else painterResource(
+                    R.drawable.icon_show
+                ),
+                contentDescription = if (isVisible) "Hide" else "Show"
+            )
         }
-
     }
 
 
