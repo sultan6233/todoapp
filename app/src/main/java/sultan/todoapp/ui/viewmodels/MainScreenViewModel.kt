@@ -7,6 +7,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import sultan.todoapp.data.TodoItemsRepositoryImpl
 import sultan.todoapp.domain.Importance
@@ -19,15 +20,19 @@ class MainScreenViewModel(private val todoRepository: TodoItemsRepository = Todo
     private val _todoItems = MutableStateFlow<Map<String, TodoItem>>(mapOf())
     val todoItems: StateFlow<Map<String, TodoItem>> = _todoItems.asStateFlow()
 
-    private val _showHideVisibility = MutableStateFlow(false)
+    private val _showHideVisibility = MutableStateFlow(true)
     val showHideVisibility: StateFlow<Boolean> = _showHideVisibility.asStateFlow()
+
+    fun countDoneTasks(): Int {
+        return todoItems.value.filter { it.value.isCompleted }.count()
+    }
 
     fun toggleCheckbox(item: TodoItem) {
         todoRepository.modifyItem(item)
         loadTodoItems()
     }
 
-    fun toggleShowHide(isVisible:Boolean) {
+    fun toggleShowHide(isVisible: Boolean) {
         _showHideVisibility.value = isVisible
     }
 

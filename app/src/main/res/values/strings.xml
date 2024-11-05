@@ -2,4 +2,9 @@
     <string name="app_name">Todo App</string>
     <string name="my_tasks">Мои дела</string>
     <string name="done">Выполнено - %1$s</string>
+    <string name="close">Закрыть</string>
+    <string name="save">Сохранить</string>
+    <string name="what_to_do">Что надо сделать...</string>
+    <string name="no">Нет</string>
+    <string name="importance">Важность</string>
 </resources>

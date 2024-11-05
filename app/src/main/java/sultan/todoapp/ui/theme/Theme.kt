@@ -27,7 +27,9 @@ private val DarkColorScheme = darkColorScheme(
     onPrimary = LabelDarkPrimary,
     onBackground = LabelDarkPrimary,
     primaryContainer = CheckboxDarkChecked,
-    error = ErrorDarkColor
+    error = ErrorDarkColor,
+    onPrimaryContainer = BlueDark,
+    onSecondary = TertiaryDark.withTransparency(0.4f)
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -38,7 +40,9 @@ private val LightColorScheme = lightColorScheme(
     onPrimary = LabelLightPrimary,
     onBackground = LabelLightPrimary,
     primaryContainer = CheckboxLightChecked,
-    error = ErrorLightColor
+    error = ErrorLightColor,
+    onPrimaryContainer = BlueLight,
+    onSecondary = TertiaryLight.withTransparency(0.3f)
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
     surface = Color(0xFFFFFBFE),
