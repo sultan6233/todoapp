@@ -24,4 +24,10 @@ val ErrorLightColor = Color(0xFFFF3B30)
 val ErrorDarkColor = Color(0xFFFF453A)
 
 val BackLightSecondary = Color(0xffffffff)
-val BackDarkSecondary = Color(0xffffffff)
+val BackDarkSecondary = Color(0xFF252528)
+
+val BlueLight = Color(0xFF007AFF)
+val BlueDark = Color(0xFF0A84FF)
+
+val TertiaryLight = Color(0xff000000)
+val TertiaryDark = Color(0xffffffff)
