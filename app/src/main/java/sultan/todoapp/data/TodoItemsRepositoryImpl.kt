@@ -13,7 +13,7 @@ class TodoItemsRepositoryImpl : TodoItemsRepository {
         TODO("Not yet implemented")
     }
 
-    override fun deleteItem(): Boolean {
+    override fun deleteItem(todoItem: TodoItem): Boolean {
         TODO("Not yet implemented")
     }
 

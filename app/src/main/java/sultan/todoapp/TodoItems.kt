@@ -3,6 +3,7 @@ package sultan.todoapp
 import sultan.todoapp.domain.Importance
 import sultan.todoapp.domain.TodoItem
 import java.util.Date
+import java.util.HashMap
 import kotlin.random.Random
 
 object TodoItems {
@@ -39,6 +40,17 @@ object TodoItems {
         _todoItemsMap[item.id] = item.copy(isCompleted = item.isCompleted)
         todoItemsMap = _todoItemsMap.toMap()
     }
+
+    fun generateNewTodoItemId(todoMap: Map<String, TodoItem>): String {
+        if (todoMap.isEmpty()) return "1"
+
+        val lastId = todoMap.keys.last()
+
+        val newId = (lastId.toInt() + 1).toString()
+
+        return newId
+    }
+
 
     private fun getRandomImportance(): Importance {
         val values = Importance.entries.toTypedArray()

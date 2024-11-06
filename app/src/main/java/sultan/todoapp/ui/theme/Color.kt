@@ -31,3 +31,15 @@ val BlueDark = Color(0xFF0A84FF)
 
 val TertiaryLight = Color(0xff000000)
 val TertiaryDark = Color(0xffffffff)
+
+val ElevatedBackLight = Color(0xffffffff)
+val ElevatedBackDark = Color(0xff3C3C3F)
+
+val SupportLight = Color(0xff000000)
+val SupportDark = Color(0xff000000)
+
+val SupportSeperatorLight = Color(0xffffffff)
+val SupportSeperatorDark = Color(0xff000000)
+
+val BlueLightThumb = Color(0xFF007AFF)
+val BlueDarkThumb = Color(0xFF0A84FF)

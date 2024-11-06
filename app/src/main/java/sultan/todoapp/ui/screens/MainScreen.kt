@@ -2,6 +2,7 @@ package sultan.todoapp.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
+import com.google.gson.Gson
 import sultan.todoapp.R
 import sultan.todoapp.domain.Importance
 import sultan.todoapp.domain.TodoItem
@@ -94,14 +96,21 @@ fun MainContent(
 
             LazyColumn(contentPadding = PaddingValues(10.dp)) {
                 items(todoItems.toList()) { (key, item) ->
+                    val todoItemJson = Gson().toJson(item)
                     if (item.isCompleted) {
                         if (show) {
                             val isFirst = todoItems.keys.first() == key
-                            TasksList(item, viewModel, isFirst)
+                            TasksList(
+                                item,
+                                viewModel,
+                                isFirst,
+                                onModifyClick = { navController.navigate("AddTaskScreen$todoItemJson") })
                         }
                     } else {
                         val isFirst = todoItems.keys.first() == key
-                        TasksList(item, viewModel, isFirst)
+                        TasksList(item, viewModel, isFirst, onModifyClick = {
+                            navController.navigate("AddTaskScreen$todoItemJson")
+                        })
                     }
                 }
             }
@@ -169,7 +178,7 @@ fun TaskTitle(
             text = text,
             fontSize = 16.sp,
             style = TextStyle(
-                color = if (isStrikethrough) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onPrimary,
+                color = if (isStrikethrough) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onPrimary,
                 textDecoration = if (isStrikethrough) TextDecoration.LineThrough else null
             ),
             maxLines = 3,
@@ -181,14 +190,23 @@ fun TaskTitle(
 }
 
 @Composable
-fun InfoImage() {
+fun InfoImage(onClick: () -> Unit) {
     Image(
-        painter = painterResource(id = R.drawable.icon_info), contentDescription = "Info"
+        painter = painterResource(id = R.drawable.icon_info),
+        contentDescription = "Info",
+        modifier = Modifier.clickable {
+            onClick()
+        }
     )
 }
 
 @Composable
-fun TaskContent(item: TodoItem, viewModel: MainScreenViewModel, firstItem: Boolean) {
+fun TaskContent(
+    item: TodoItem,
+    viewModel: MainScreenViewModel,
+    firstItem: Boolean,
+    onModifyClick: () -> Unit
+) {
     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
         Card(
             modifier = Modifier
@@ -218,7 +236,9 @@ fun TaskContent(item: TodoItem, viewModel: MainScreenViewModel, firstItem: Boole
                     } else null,
                     item.isCompleted
                 )
-                InfoImage()
+                InfoImage(onClick = {
+                    onModifyClick()
+                })
             }
         }
     }
@@ -226,9 +246,12 @@ fun TaskContent(item: TodoItem, viewModel: MainScreenViewModel, firstItem: Boole
 
 @Composable
 fun TasksList(
-    item: TodoItem, viewModel: MainScreenViewModel = viewModel(), firstItem: Boolean
+    item: TodoItem,
+    viewModel: MainScreenViewModel = viewModel(),
+    firstItem: Boolean,
+    onModifyClick: () -> Unit
 ) {
-    TaskContent(item, viewModel, firstItem)
+    TaskContent(item, viewModel, firstItem, onModifyClick = onModifyClick)
 }
 
 @Composable

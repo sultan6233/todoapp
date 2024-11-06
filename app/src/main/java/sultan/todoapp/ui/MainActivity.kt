@@ -11,9 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.google.gson.Gson
 import kotlinx.serialization.Serializable
 import sultan.todoapp.domain.TodoItem
 import sultan.todoapp.ui.screens.AddTaskScreen
@@ -43,7 +46,14 @@ class MainActivity : ComponentActivity() {
 
         NavHost(navController = navController, startDestination = "MainScreen") {
             composable("MainScreen") { MainScreen(navController) }
-            composable("AddTaskScreen") { AddTaskScreen(navController) }
+            composable(
+                "AddTaskScreen/{todoItemJson}",
+                arguments = listOf(navArgument("todoItemJson") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val todoItemJson = backStackEntry.arguments?.getString("todoItemJson")
+                val todoItem = todoItemJson?.let { Gson().fromJson(it, TodoItem::class.java) }
+                AddTaskScreen(navController, todoItem)
+            }
         }
     }
 

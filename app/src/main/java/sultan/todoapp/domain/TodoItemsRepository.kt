@@ -5,6 +5,6 @@ import sultan.todoapp.TodoItems
 interface TodoItemsRepository {
     suspend fun getItems(): Map<String, TodoItem>
     fun addItem(): TodoItem
-    fun deleteItem(): Boolean
+    fun deleteItem(todoItem: TodoItem): Boolean
     fun modifyItem(item:TodoItem)
 }

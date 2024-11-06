@@ -29,7 +29,10 @@ private val DarkColorScheme = darkColorScheme(
     primaryContainer = CheckboxDarkChecked,
     error = ErrorDarkColor,
     onPrimaryContainer = BlueDark,
-    onSecondary = TertiaryDark.withTransparency(0.4f)
+    onTertiary = TertiaryDark.withTransparency(0.4f),
+    onSecondary = ElevatedBackDark,
+    surfaceContainer = SupportDark.withTransparency(0.32f),
+    surface = SupportSeperatorDark.withTransparency(0.2f)
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -42,7 +45,10 @@ private val LightColorScheme = lightColorScheme(
     primaryContainer = CheckboxLightChecked,
     error = ErrorLightColor,
     onPrimaryContainer = BlueLight,
-    onSecondary = TertiaryLight.withTransparency(0.3f)
+    onTertiary = TertiaryLight.withTransparency(0.3f),
+    onSecondary = ElevatedBackLight,
+    surfaceContainer = SupportLight.withTransparency(0.06f),
+    surface = SupportSeperatorLight.withTransparency(0.2f)
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
     surface = Color(0xFFFFFBFE),
@@ -57,7 +63,6 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun TodoAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
