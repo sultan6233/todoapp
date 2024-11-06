@@ -20,8 +20,16 @@ class MainScreenViewModel(private val todoRepository: TodoItemsRepository = Todo
     private val _todoItems = MutableStateFlow<Map<String, TodoItem>>(mapOf())
     val todoItems: StateFlow<Map<String, TodoItem>> = _todoItems.asStateFlow()
 
-    private val _showHideVisibility = MutableStateFlow(true)
+    private val _showHideVisibility = MutableStateFlow(false)
     val showHideVisibility: StateFlow<Boolean> = _showHideVisibility.asStateFlow()
+
+
+    private val _isDarkTheme = MutableStateFlow(false)
+    val isDarkTheme: StateFlow<Boolean> = _isDarkTheme.asStateFlow()
+
+    fun toggleTheme(isChecked:Boolean) {
+        _isDarkTheme.value = isChecked
+    }
 
     fun countDoneTasks(): Int {
         return todoItems.value.filter { it.value.isCompleted }.count()
@@ -39,9 +47,5 @@ class MainScreenViewModel(private val todoRepository: TodoItemsRepository = Todo
     fun loadTodoItems() = viewModelScope.launch(Dispatchers.IO) {
         val items = todoRepository.getItems()
         _todoItems.value = items
-    }
-
-    init {
-        loadTodoItems()
     }
 }

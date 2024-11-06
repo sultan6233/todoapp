@@ -1,7 +1,5 @@
 package sultan.todoapp.ui.screens
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,61 +7,39 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DatePickerState
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.SelectableChipElevation
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -73,7 +49,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -81,15 +56,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import sultan.todoapp.R
 import sultan.todoapp.domain.Importance
 import sultan.todoapp.domain.TodoItem
+import sultan.todoapp.ui.theme.TodoAppTheme
 import sultan.todoapp.ui.theme.withTransparency
 import sultan.todoapp.ui.viewmodels.AddTaskViewModel
 import java.text.SimpleDateFormat
@@ -99,23 +75,33 @@ import java.time.ZoneId
 import java.util.Date
 import java.util.Locale
 
+fun TodoItem.toJson(): String {
+    return Json.encodeToString(this)
+}
+
+fun String.toTodoItem(): TodoItem? {
+    return if (this == "null") {
+        null
+    } else {
+        Json.decodeFromString(this)
+    }
+}
+
 @Composable
-fun AddTaskScreen(navController: NavHostController, todoItem: TodoItem?) {
+fun AddTaskScreen(navController: NavHostController, todoItemJson: String? = null) {
+    val todoItem = todoItemJson?.toTodoItem()
+    initValuesForModifying(todoItem, viewModel())
+
     AddTaskContent(navController, todoItem)
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 fun convertMillisToLocalDateApi26AndAbove(milliseconds: Long): LocalDate {
     return Instant.ofEpochMilli(milliseconds).atZone(ZoneId.systemDefault()).toLocalDate()
 }
 
 fun convertMillisToDate(milliseconds: Long): Date {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        convertMillisToLocalDateApi26AndAbove(milliseconds)
-        Date.from(Instant.ofEpochMilli(milliseconds))
-    } else {
-        Date(milliseconds)
-    }
+    convertMillisToLocalDateApi26AndAbove(milliseconds)
+    return Date.from(Instant.ofEpochMilli(milliseconds))
 }
 
 
@@ -125,16 +111,45 @@ fun formatDateToString(date: Date): String {
     return sdf.format(date)
 }
 
+fun initValuesForModifying(todoItem: TodoItem?, viewModel: AddTaskViewModel) {
+    todoItem?.let {
+        viewModel.id = it.id
+        viewModel.taskTextChange(it.text)
+        viewModel.changeImportance(it.importance)
+        viewModel.createdAt = it.createdAt
+        viewModel.modifiedAt = it.modifiedAt
+        viewModel.isCompleted = it.isCompleted
+        viewModel.selectDate(it.deadline)
+        viewModel.toggleCheckBox(it.deadline != null)
+    }
+}
+
 @Composable
 fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
     val viewModel: AddTaskViewModel = viewModel()
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val paddingTop = screenWidth * 0.1f
     val selectedDate = viewModel.selectedDate.collectAsState()
+    val taskText = viewModel.taskText.collectAsState().value
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     if (viewModel.isCheckBoxChecked.collectAsState().value && selectedDate.value == null) {
         DatePickerModal(onDateSelected = {
             it?.let {
-                viewModel.selectDate(convertMillisToDate(it))
+                if (it > System.currentTimeMillis()) {
+
+                    viewModel.selectDate(convertMillisToDate(it))
+                } else {
+                    scope.launch {
+                        snackbarHostState.showSnackbar(
+                            "Дата не может быть меньше сегодняшней",
+                            duration = SnackbarDuration.Short,
+                            withDismissAction = false
+                        )
+                    }
+
+                }
             } ?: run { viewModel.toggleCheckBox(false) }
 
 
@@ -143,6 +158,7 @@ fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
         }, show = viewModel.selectedDate.collectAsState().value == null
         )
     }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -159,10 +175,13 @@ fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
                 navController.popBackStack()
             })
             SaveText(onClick = {
-                viewModel.collectTodoItem(todoItem)
+                if (taskText.isNotEmpty()) {
+                    viewModel.saveTask()
+                }
+                navController.popBackStack()
             })
         }
-        TaskEditText(onValueChange = { viewModel.taskTextChange(text = it) })
+        TaskEditText()
         SwipableImportanceTab(viewModel)
         HorizontalDivider(
             modifier = Modifier
@@ -181,6 +200,17 @@ fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
             DateTaskEnd(viewModel)
         }
 
+        Box(modifier = Modifier.fillMaxSize()) {
+            SnackbarHost(hostState = snackbarHostState, snackbar =
+            {
+                Snackbar(
+                    it,
+                    contentColor = MaterialTheme.colorScheme.error,
+                    containerColor = MaterialTheme.colorScheme.onPrimary
+                )
+            })
+        }
+
         HorizontalDivider(
             modifier = Modifier
                 .fillMaxWidth()
@@ -191,10 +221,13 @@ fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
         DeleteButton(
             onClick = {
                 todoItem?.let {
-                    viewModel.delete(it)
+                    viewModel.deleteTask(it)
+                    navController.popBackStack()
                 } ?: navController.popBackStack()
             }, viewModel.taskText.collectAsState().value.isNotEmpty()
         )
+
+
 
     }
 
@@ -280,15 +313,19 @@ fun SaveText(onClick: () -> Unit) {
 }
 
 @Composable
-fun TaskEditText(onValueChange: (String) -> Unit) {
-    var text by remember { mutableStateOf("") }
+fun TaskEditText(viewModel: AddTaskViewModel = viewModel()) {
+
+    val savedText = viewModel.taskText.collectAsState()
     var isFocused by remember { mutableStateOf(false) }
 
+    LaunchedEffect(savedText) {
+
+    }
+
     OutlinedTextField(
-        value = text,
+        value = savedText.value,
         onValueChange = { newText ->
-            text = newText
-            onValueChange(newText)
+            viewModel.taskTextChange(newText)
         },
         placeholder = {
 
@@ -468,4 +505,20 @@ fun AddTaskScreenPreview() {
         convertMillisToDate(System.currentTimeMillis())
     )
     AddTaskContent(navController = rememberNavController(), todoItem)
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun AddTaskLightPreview() {
+    TodoAppTheme(darkTheme = false) {
+        AddTaskScreen(rememberNavController())
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun AddTaskDarkPreview() {
+    TodoAppTheme(darkTheme = true) {
+        AddTaskScreen(rememberNavController())
+    }
 }

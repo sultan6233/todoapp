@@ -24,6 +24,8 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -42,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,27 +55,30 @@ import com.google.gson.Gson
 import sultan.todoapp.R
 import sultan.todoapp.domain.Importance
 import sultan.todoapp.domain.TodoItem
+import sultan.todoapp.ui.theme.TodoAppTheme
 import sultan.todoapp.ui.theme.taskCheckBoxColors
 import sultan.todoapp.ui.theme.withTransparency
 import sultan.todoapp.ui.viewmodels.MainScreenViewModel
 
 @Composable
-fun MainScreen(navController: NavHostController) {
+fun MainScreen(onNavigateToAddTaskScreen: (TodoItem?) -> Unit, viewModel: MainScreenViewModel) {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-    val viewModel: MainScreenViewModel = viewModel()
     val todoItems by viewModel.todoItems.collectAsState()
     val showHideVisibility by viewModel.showHideVisibility.collectAsState()
 
-    MainContent(screenWidth, viewModel, todoItems, showHideVisibility, navController)
+
+    MainContent(screenWidth, viewModel, todoItems, showHideVisibility, onNavigateToAddTaskScreen)
+
+    viewModel.loadTodoItems()
 }
 
 @Composable
 fun MainContent(
     screenWidth: Dp,
-    viewModel: MainScreenViewModel = viewModel(),
+    viewModel: MainScreenViewModel,
     todoItems: Map<String, TodoItem>,
     show: Boolean,
-    navController: NavHostController
+    onNavigateToAddTaskScreen: (TodoItem?) -> Unit
 ) {
     val paddingStart = screenWidth * 0.2f
     Box(contentAlignment = Alignment.BottomEnd, modifier = Modifier) {
@@ -82,7 +88,15 @@ fun MainContent(
                     .fillMaxWidth()
                     .padding(start = paddingStart, top = paddingStart)
             ) {
-                MyTasksTitleText()
+                Row(
+                    horizontalArrangement = Arrangement.Absolute.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    MyTasksTitleText()
+                    ChangeThemeSwitch(viewModel)
+                }
+
                 Row(
                     horizontalArrangement = Arrangement.Absolute.SpaceBetween,
                     modifier = Modifier.fillMaxWidth(),
@@ -96,7 +110,6 @@ fun MainContent(
 
             LazyColumn(contentPadding = PaddingValues(10.dp)) {
                 items(todoItems.toList()) { (key, item) ->
-                    val todoItemJson = Gson().toJson(item)
                     if (item.isCompleted) {
                         if (show) {
                             val isFirst = todoItems.keys.first() == key
@@ -104,12 +117,12 @@ fun MainContent(
                                 item,
                                 viewModel,
                                 isFirst,
-                                onModifyClick = { navController.navigate("AddTaskScreen$todoItemJson") })
+                                onModifyClick = { onNavigateToAddTaskScreen(item) })
                         }
                     } else {
                         val isFirst = todoItems.keys.first() == key
                         TasksList(item, viewModel, isFirst, onModifyClick = {
-                            navController.navigate("AddTaskScreen$todoItemJson")
+                            onNavigateToAddTaskScreen(item)
                         })
                     }
                 }
@@ -117,11 +130,28 @@ fun MainContent(
 
         }
         FABAdd(modifier = Modifier.padding(end = 12.dp, bottom = paddingStart), onClick = {
-            navController.navigate("AddTaskScreen")
+            onNavigateToAddTaskScreen(null)
         })
     }
 
 
+}
+
+@Composable
+fun ChangeThemeSwitch(viewModel: MainScreenViewModel) {
+    var isChecked by remember { mutableStateOf(false) }
+    Switch(
+        isChecked, onCheckedChange = {
+            isChecked = it
+            viewModel.toggleTheme(it)
+
+        }, colors = SwitchDefaults.colors(
+            checkedThumbColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            uncheckedThumbColor = MaterialTheme.colorScheme.onSecondary,
+            checkedTrackColor = MaterialTheme.colorScheme.onPrimaryContainer.withTransparency(0.3f),
+            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainer,
+            uncheckedBorderColor = MaterialTheme.colorScheme.surfaceContainer
+        ), modifier = Modifier.padding(end = 10.dp))
 }
 
 @Composable
@@ -211,7 +241,7 @@ fun TaskContent(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
-                .aspectRatio(5f), colors = CardColors(
+                .aspectRatio(4f), colors = CardColors(
                 containerColor = MaterialTheme.colorScheme.secondary,
                 disabledContentColor = MaterialTheme.colorScheme.secondary,
                 disabledContainerColor = MaterialTheme.colorScheme.secondary,
@@ -228,14 +258,21 @@ fun TaskContent(
                 TaskCheckbox(
                     taskCheckBoxColors(item.importance), viewModel, item
                 )
-                TaskTitle(
-                    item.text,
+                Column(
                     modifier = Modifier.weight(1f),
-                    if (item.importance == Importance.HIGH && !item.isCompleted) {
-                        painterResource(R.drawable.icon_importance_high)
-                    } else null,
-                    item.isCompleted
-                )
+                    verticalArrangement = Arrangement.SpaceAround
+                ) {
+                    TaskTitle(
+                        item.text, modifier = Modifier,
+                        if (item.importance == Importance.HIGH && !item.isCompleted) {
+                            painterResource(R.drawable.icon_importance_high)
+                        } else null,
+                        item.isCompleted
+                    )
+                    item.deadline?.let {
+                        TaskDeadlineText(formatDateToString(it))
+                    }
+                }
                 InfoImage(onClick = {
                     onModifyClick()
                 })
@@ -255,6 +292,16 @@ fun TasksList(
 }
 
 @Composable
+fun TaskDeadlineText(text: String) {
+    Text(
+        color = MaterialTheme.colorScheme.onTertiary,
+        text = text,
+        fontSize = 14.sp,
+        modifier = Modifier.padding(start = 14.dp)
+    )
+}
+
+@Composable
 fun ShowHideIconButton(viewModel: MainScreenViewModel = viewModel()) {
     var isVisible by remember { mutableStateOf(false) }
 
@@ -265,7 +312,8 @@ fun ShowHideIconButton(viewModel: MainScreenViewModel = viewModel()) {
         Icon(
             painter = if (isVisible) painterResource(R.drawable.icon_show) else painterResource(
                 R.drawable.icon_hide
-            ), contentDescription = if (isVisible) "Hide" else "Show"
+            ), contentDescription = if (isVisible) "Hide" else "Show",
+            tint = Color.Unspecified
         )
     }
 }
@@ -280,5 +328,21 @@ fun FABAdd(onClick: () -> Unit, modifier: Modifier) {
             contentDescription = null,
             tint = Color.White
         )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun MainLightPreview() {
+    TodoAppTheme(darkTheme = false) {
+        MainScreen(onNavigateToAddTaskScreen = {}, viewModel())
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun MainDarkPreview() {
+    TodoAppTheme(darkTheme = true) {
+        MainScreen(onNavigateToAddTaskScreen = {}, viewModel())
     }
 }

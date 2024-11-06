@@ -9,12 +9,13 @@ class TodoItemsRepositoryImpl : TodoItemsRepository {
         return TodoItems.todoItemsMap
     }
 
-    override fun addItem(): TodoItem {
-        TODO("Not yet implemented")
+    override fun addItem(item: TodoItem) {
+        TodoItems.addItemIntoMap(item)
     }
 
     override fun deleteItem(todoItem: TodoItem): Boolean {
-        TODO("Not yet implemented")
+        TodoItems.deleteItemFromMap(todoItem)
+        return true
     }
 
     override fun modifyItem(item: TodoItem) {

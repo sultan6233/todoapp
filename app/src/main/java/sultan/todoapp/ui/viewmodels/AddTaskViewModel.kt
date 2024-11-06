@@ -1,6 +1,5 @@
 package sultan.todoapp.ui.viewmodels
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,10 +10,10 @@ import sultan.todoapp.domain.Importance
 import sultan.todoapp.domain.TodoItem
 import sultan.todoapp.domain.TodoItemsRepository
 import sultan.todoapp.ui.screens.convertMillisToDate
-import sultan.todoapp.ui.screens.convertMillisToLocalDateApi26AndAbove
 import java.util.Date
 
-class AddTaskViewModel(val todoItemsRepository: TodoItemsRepository = TodoItemsRepositoryImpl()) : ViewModel() {
+class AddTaskViewModel(val todoItemsRepository: TodoItemsRepository = TodoItemsRepositoryImpl()) :
+    ViewModel() {
     private val _isCheckBoxChecked = MutableStateFlow(false)
 
     val isCheckBoxChecked: StateFlow<Boolean> = _isCheckBoxChecked.asStateFlow()
@@ -23,7 +22,7 @@ class AddTaskViewModel(val todoItemsRepository: TodoItemsRepository = TodoItemsR
     private val _selectedDate: MutableStateFlow<Date?> = MutableStateFlow(null)
     var selectedDate: StateFlow<Date?> = _selectedDate.asStateFlow()
 
-    private val _taskText: MutableStateFlow<String> = MutableStateFlow("")
+    private val _taskText = MutableStateFlow("")
     var taskText: StateFlow<String> = _taskText.asStateFlow()
 
 
@@ -31,7 +30,11 @@ class AddTaskViewModel(val todoItemsRepository: TodoItemsRepository = TodoItemsR
     var selectedImportance: StateFlow<Importance> = _selectedImportance.asStateFlow()
 
     var createdAt: Date = convertMillisToDate(System.currentTimeMillis())
+    var modifiedAt: Date? = null
     var isCompleted: Boolean = false
+
+    var id = TodoItems.generateNewTodoItemId(TodoItems.todoItemsMap)
+
 
     fun changeImportance(importance: Importance) {
         _selectedImportance.value = importance
@@ -52,31 +55,21 @@ class AddTaskViewModel(val todoItemsRepository: TodoItemsRepository = TodoItemsR
         _selectedDate.value = date
     }
 
-    fun delete(todoItem: TodoItem) {
+    fun deleteTask(todoItem: TodoItem) {
         todoItemsRepository.deleteItem(todoItem)
     }
 
-    fun collectTodoItem(todoItem: TodoItem?): TodoItem? {
-        todoItem?.let {
-            return TodoItem(
-                id = todoItem.id,
-                text = _taskText.value,
-                importance = _selectedImportance.value,
-                deadline = _selectedDate.value,
-                isCompleted = isCompleted,
-                createdAt = createdAt,
-                convertMillisToDate(System.currentTimeMillis())
-            )
-        } ?: return TodoItem(
-            id = TodoItems.generateNewTodoItemId(TodoItems.todoItemsMap),
+    fun saveTask() {
+        val todoItem = TodoItem(
+            id = id,
             text = _taskText.value,
             importance = _selectedImportance.value,
             deadline = _selectedDate.value,
             isCompleted = isCompleted,
             createdAt = createdAt,
-            convertMillisToDate(System.currentTimeMillis())
+            modifiedAt
         )
-
+        todoItemsRepository.addItem(todoItem)
     }
 
 
