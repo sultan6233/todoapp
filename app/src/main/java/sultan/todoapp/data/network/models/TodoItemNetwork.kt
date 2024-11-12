@@ -10,10 +10,12 @@ data class TodoItemNetwork(
     val importance: ImportanceNetwork,
     val deadline: Long?,
     val done: Boolean,
-    val color: String,
+    val color: String? = null,
     @SerializedName("created_at")
     val createdAt: Long,
     @SerializedName("changed_at")
-    val modifiedAt: Long? = null,
-    val lastUpdatedBy: String
+    val modifiedAt: Long,
+    @SerializedName("last_updated_by")
+    val lastUpdatedBy: String,
+    val files: String? = null
 )

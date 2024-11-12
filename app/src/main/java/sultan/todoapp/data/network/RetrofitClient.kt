@@ -16,7 +16,7 @@ object RetrofitClient {
             .build()
 
         val retrofit: Retrofit = Retrofit.Builder()
-            .baseUrl("https://beta.mrdekk.ru/todo")
+            .baseUrl("https://hive.mrdekk.ru/todo/")
             .addConverterFactory(GsonConverterFactory.create())
             .client(okHttpClient)
             .build()

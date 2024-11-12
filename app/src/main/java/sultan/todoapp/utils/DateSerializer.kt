@@ -11,19 +11,19 @@ import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.Date
 
-@OptIn(ExperimentalSerializationApi::class)
-@Serializer(forClass = Date::class)
-class DateSerializer : KSerializer<Date> {
-
-    private val formatter: DateTimeFormatter = DateTimeFormatter.ISO_INSTANT
-
-    override fun serialize(encoder: Encoder, value: Date) {
-        encoder.encodeString(formatter.format(value.toInstant()))
-    }
-
-    override fun deserialize(decoder: Decoder): Date {
-        val instant = Instant.from(formatter.parse(decoder.decodeString()))
-        return Date.from(instant)
-    }
-
-}
+//@OptIn(ExperimentalSerializationApi::class)
+//@Serializer(forClass = Date::class)
+//class DateSerializer : KSerializer<Date> {
+//
+//    private val formatter: DateTimeFormatter = DateTimeFormatter.ISO_INSTANT
+//
+//    override fun serialize(encoder: Encoder, value: Date) {
+//        encoder.encodeString(formatter.format(value.toInstant()))
+//    }
+//
+//    override fun deserialize(decoder: Decoder): Date {
+//        val instant = Instant.from(formatter.parse(decoder.decodeString()))
+//        return Date.from(instant)
+//    }
+//
+//}

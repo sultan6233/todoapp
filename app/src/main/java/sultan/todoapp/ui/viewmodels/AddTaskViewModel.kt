@@ -1,18 +1,25 @@
 package sultan.todoapp.ui.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import sultan.todoapp.TodoItems
 import sultan.todoapp.data.TodoItemsRepositoryImpl
 import sultan.todoapp.domain.Importance
 import sultan.todoapp.domain.TodoItem
 import sultan.todoapp.domain.TodoItemsRepository
+import sultan.todoapp.domain.network.NetworkResult
 import sultan.todoapp.ui.screens.convertMillisToDate
 import java.util.Date
+import java.util.UUID
 
-class AddTaskViewModel(val todoItemsRepository: TodoItemsRepository = TodoItemsRepositoryImpl()) :
+class AddTaskViewModel(private val todoItemsRepository: TodoItemsRepository = TodoItemsRepositoryImpl()) :
     ViewModel() {
     private val _isCheckBoxChecked = MutableStateFlow(false)
 
@@ -20,20 +27,28 @@ class AddTaskViewModel(val todoItemsRepository: TodoItemsRepository = TodoItemsR
 
 
     private val _selectedDate: MutableStateFlow<Date?> = MutableStateFlow(null)
-    var selectedDate: StateFlow<Date?> = _selectedDate.asStateFlow()
+    val selectedDate: StateFlow<Date?> = _selectedDate.asStateFlow()
 
     private val _taskText = MutableStateFlow("")
-    var taskText: StateFlow<String> = _taskText.asStateFlow()
+    val taskText: StateFlow<String> = _taskText.asStateFlow()
 
 
     private val _selectedImportance: MutableStateFlow<Importance> = MutableStateFlow(Importance.LOW)
-    var selectedImportance: StateFlow<Importance> = _selectedImportance.asStateFlow()
+    val selectedImportance: StateFlow<Importance> = _selectedImportance.asStateFlow()
+
+    private val _saveRequest: MutableStateFlow<NetworkResult> =
+        MutableStateFlow(NetworkResult.Loading)
+    val saveRequest: StateFlow<NetworkResult> = _saveRequest.asStateFlow()
+
+    private val _todoItem: MutableStateFlow<TodoItem?> =
+        MutableStateFlow(null)
+    val todoItem: StateFlow<TodoItem?> = _todoItem.asStateFlow()
 
     var createdAt: Date = convertMillisToDate(System.currentTimeMillis())
     var modifiedAt: Date? = null
     var isCompleted: Boolean = false
 
-    var id = TodoItems.generateNewTodoItemId(TodoItems.todoItemsMap)
+    var id = UUID.randomUUID().toString()
 
 
     fun changeImportance(importance: Importance) {
@@ -59,7 +74,7 @@ class AddTaskViewModel(val todoItemsRepository: TodoItemsRepository = TodoItemsR
         todoItemsRepository.deleteItem(todoItem)
     }
 
-    fun saveTask() {
+    suspend fun saveTask() {
         val todoItem = TodoItem(
             id = id,
             text = _taskText.value,
@@ -69,7 +84,48 @@ class AddTaskViewModel(val todoItemsRepository: TodoItemsRepository = TodoItemsR
             createdAt = createdAt,
             modifiedAt
         )
-        todoItemsRepository.addItem(todoItem)
+
+        todoItemsRepository.addItem(todoItem).collectLatest {
+            _saveRequest.value = it
+        }
+    }
+
+    fun loadTodoItem(savedId: String) = viewModelScope.launch(Dispatchers.IO) {
+        val items = todoItemsRepository.getItem(savedId)
+        items.collectLatest {
+            when (it) {
+                is NetworkResult.Loading -> ""
+
+                is NetworkResult.Success<*> -> {
+                    val todoItem = it.data as TodoItem
+                    _todoItem.value = todoItem
+                    id = todoItem.id
+                    taskTextChange(todoItem.text)
+                    changeImportance(todoItem.importance)
+                    createdAt = todoItem.createdAt
+                    modifiedAt = todoItem.modifiedAt
+                    isCompleted = todoItem.isCompleted
+                    selectDate(todoItem.deadline)
+                    toggleCheckBox(todoItem.deadline != null)
+                }
+
+                is NetworkResult.Error.Cancel -> {
+                    Log.d("tesssst", it.message.toString())
+                }
+
+                is NetworkResult.Error.IO -> {
+                    Log.d("tesssst", it.message.toString())
+                }
+
+                is NetworkResult.Error.Http -> {
+                    Log.d("tesssst", it.message.toString())
+                }
+
+                is NetworkResult.Error.Parse -> {
+                    Log.d("tesssst", it.message.toString())
+                }
+            }
+        }
     }
 
 

@@ -1,10 +1,12 @@
 package sultan.todoapp.domain
 
-import sultan.todoapp.TodoItems
+import kotlinx.coroutines.flow.Flow
+import sultan.todoapp.domain.network.NetworkResult
 
 interface TodoItemsRepository {
-    suspend fun getItems(): Map<String, TodoItem>
-    fun addItem(item: TodoItem)
+    suspend fun getItems(): Flow<NetworkResult>
+    suspend fun getItem(id: String): Flow<NetworkResult>
+    fun addItem(item: TodoItem): Flow<NetworkResult>
     fun deleteItem(todoItem: TodoItem): Boolean
-    fun modifyItem(item:TodoItem)
+    fun modifyItem(item: TodoItem)
 }

@@ -65,6 +65,7 @@ import kotlinx.serialization.json.Json
 import sultan.todoapp.R
 import sultan.todoapp.domain.Importance
 import sultan.todoapp.domain.TodoItem
+import sultan.todoapp.domain.network.NetworkResult
 import sultan.todoapp.ui.theme.TodoAppTheme
 import sultan.todoapp.ui.theme.withTransparency
 import sultan.todoapp.ui.viewmodels.AddTaskViewModel
@@ -75,24 +76,12 @@ import java.time.ZoneId
 import java.util.Date
 import java.util.Locale
 
-fun TodoItem.toJson(): String {
-    return Json.encodeToString(this)
-}
-
-fun String.toTodoItem(): TodoItem? {
-    return if (this == "null") {
-        null
-    } else {
-        Json.decodeFromString(this)
-    }
-}
 
 @Composable
-fun AddTaskScreen(navController: NavHostController, todoItemJson: String? = null) {
-    val todoItem = todoItemJson?.toTodoItem()
-    initValuesForModifying(todoItem, viewModel())
+fun AddTaskScreen(navController: NavHostController, id: String? = null) {
+    initValuesForModifying(id, viewModel())
 
-    AddTaskContent(navController, todoItem)
+    AddTaskContent(navController)
 }
 
 fun convertMillisToLocalDateApi26AndAbove(milliseconds: Long): LocalDate {
@@ -111,21 +100,14 @@ fun formatDateToString(date: Date): String {
     return sdf.format(date)
 }
 
-fun initValuesForModifying(todoItem: TodoItem?, viewModel: AddTaskViewModel) {
-    todoItem?.let {
-        viewModel.id = it.id
-        viewModel.taskTextChange(it.text)
-        viewModel.changeImportance(it.importance)
-        viewModel.createdAt = it.createdAt
-        viewModel.modifiedAt = it.modifiedAt
-        viewModel.isCompleted = it.isCompleted
-        viewModel.selectDate(it.deadline)
-        viewModel.toggleCheckBox(it.deadline != null)
+fun initValuesForModifying(id: String? = null, viewModel: AddTaskViewModel) {
+    id?.let {
+        viewModel.loadTodoItem(it)
     }
 }
 
 @Composable
-fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
+fun AddTaskContent(navController: NavHostController) {
     val viewModel: AddTaskViewModel = viewModel()
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val paddingTop = screenWidth * 0.1f
@@ -134,7 +116,19 @@ fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val saved = viewModel.saveRequest.collectAsState().value
+
+    val todoItem = viewModel.todoItem.collectAsState().value
+
+    LaunchedEffect(saved) {
+        when (saved) {
+            is NetworkResult.Success<*> -> navController.popBackStack()
+            else -> ""
+        }
+    }
+
     if (viewModel.isCheckBoxChecked.collectAsState().value && selectedDate.value == null) {
+        val wrongDateText = stringResource(R.string.wrong_date)
         DatePickerModal(onDateSelected = {
             it?.let {
                 if (it > System.currentTimeMillis()) {
@@ -143,7 +137,7 @@ fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
                 } else {
                     scope.launch {
                         snackbarHostState.showSnackbar(
-                            "Дата не может быть меньше сегодняшней",
+                            wrongDateText,
                             duration = SnackbarDuration.Short,
                             withDismissAction = false
                         )
@@ -176,12 +170,13 @@ fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
             })
             SaveText(onClick = {
                 if (taskText.isNotEmpty()) {
-                    viewModel.saveTask()
+                    scope.launch {
+                        viewModel.saveTask()
+                    }
                 }
-                navController.popBackStack()
             })
         }
-        TaskEditText()
+        TaskEditText(viewModel)
         SwipableImportanceTab(viewModel)
         HorizontalDivider(
             modifier = Modifier
@@ -226,7 +221,6 @@ fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
                 } ?: navController.popBackStack()
             }, viewModel.taskText.collectAsState().value.isNotEmpty()
         )
-
 
 
     }
@@ -313,14 +307,10 @@ fun SaveText(onClick: () -> Unit) {
 }
 
 @Composable
-fun TaskEditText(viewModel: AddTaskViewModel = viewModel()) {
+fun TaskEditText(viewModel: AddTaskViewModel) {
 
     val savedText = viewModel.taskText.collectAsState()
     var isFocused by remember { mutableStateOf(false) }
-
-    LaunchedEffect(savedText) {
-
-    }
 
     OutlinedTextField(
         value = savedText.value,
@@ -504,7 +494,7 @@ fun AddTaskScreenPreview() {
         false,
         convertMillisToDate(System.currentTimeMillis())
     )
-    AddTaskContent(navController = rememberNavController(), todoItem)
+    AddTaskContent(navController = rememberNavController())
 }
 
 @Preview(showBackground = true, showSystemUi = true)

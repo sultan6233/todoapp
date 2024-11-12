@@ -19,7 +19,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import sultan.todoapp.ui.screens.AddTaskScreen
 import sultan.todoapp.ui.screens.MainScreen
-import sultan.todoapp.ui.screens.toJson
 import sultan.todoapp.ui.theme.TodoAppTheme
 import sultan.todoapp.ui.viewmodels.MainScreenViewModel
 
@@ -51,14 +50,13 @@ class MainActivity : ComponentActivity() {
         NavHost(navController = navController, startDestination = "MainScreen") {
             composable("MainScreen") {
                 MainScreen(onNavigateToAddTaskScreen = { todoItem ->
-                    val todoItemJson = todoItem?.toJson()
-                    navController.navigate("AddTaskScreen/$todoItemJson")
+                    navController.navigate("AddTaskScreen/${todoItem?.id}")
                 }, mainScreenViewModel)
             }
 
-            composable("AddTaskScreen/{todoItemJson}") { backStackEntry ->
-                val todoItemJson = backStackEntry.arguments?.getString("todoItemJson")
-                AddTaskScreen(navController = navController, todoItemJson = todoItemJson)
+            composable("AddTaskScreen/{id}") { backStackEntry ->
+                val id = backStackEntry.arguments?.getString("id")
+                AddTaskScreen(navController = navController, id = id)
             }
         }
     }
