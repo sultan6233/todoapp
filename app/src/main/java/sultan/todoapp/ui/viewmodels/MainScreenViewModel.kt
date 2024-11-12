@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import sultan.todoapp.data.TodoItemsRepositoryImpl
 import sultan.todoapp.domain.Importance
@@ -31,7 +32,7 @@ class MainScreenViewModel(private val todoRepository: TodoItemsRepository = Todo
     val isDarkTheme: StateFlow<Boolean> = _isDarkTheme.asStateFlow()
 
     fun toggleTheme(isChecked: Boolean) {
-        _isDarkTheme.value = isChecked
+        _isDarkTheme.update { isChecked }
     }
 
     fun countDoneTasks(): Int {
@@ -40,11 +41,11 @@ class MainScreenViewModel(private val todoRepository: TodoItemsRepository = Todo
 
     fun toggleCheckbox(item: TodoItem) {
         todoRepository.modifyItem(item)
-        loadTodoItems()
+        //_todoItems.update { it[item.id] = item }
     }
 
     fun toggleShowHide(isVisible: Boolean) {
-        _showHideVisibility.value = isVisible
+        _showHideVisibility.update { isVisible }
     }
 
     fun loadTodoItems() = viewModelScope.launch(Dispatchers.IO) {

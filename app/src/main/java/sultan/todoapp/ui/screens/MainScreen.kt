@@ -135,10 +135,9 @@ fun MainContent(
 
 @Composable
 fun ChangeThemeSwitch(viewModel: MainScreenViewModel) {
-    var isChecked by remember { mutableStateOf(false) }
+    val isChecked = viewModel.isDarkTheme.collectAsState()
     Switch(
-        isChecked, onCheckedChange = {
-            isChecked = it
+        isChecked.value, onCheckedChange = {
             viewModel.toggleTheme(it)
 
         }, colors = SwitchDefaults.colors(
@@ -147,7 +146,8 @@ fun ChangeThemeSwitch(viewModel: MainScreenViewModel) {
             checkedTrackColor = MaterialTheme.colorScheme.onPrimaryContainer.withTransparency(0.3f),
             uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainer,
             uncheckedBorderColor = MaterialTheme.colorScheme.surfaceContainer
-        ), modifier = Modifier.padding(end = 10.dp))
+        ), modifier = Modifier.padding(end = 10.dp)
+    )
 }
 
 @Composable
@@ -299,11 +299,10 @@ fun TaskDeadlineText(text: String) {
 
 @Composable
 fun ShowHideIconButton(viewModel: MainScreenViewModel = viewModel()) {
-    var isVisible by remember { mutableStateOf(false) }
+    val isVisible = viewModel.showHideVisibility.collectAsState().value
 
     IconButton(onClick = {
-        viewModel.toggleShowHide(isVisible)
-        isVisible = !isVisible
+        viewModel.toggleShowHide(!isVisible)
     }) {
         Icon(
             painter = if (isVisible) painterResource(R.drawable.icon_show) else painterResource(
