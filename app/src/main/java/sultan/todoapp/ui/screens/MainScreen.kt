@@ -49,9 +49,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import androidx.navigation.NavHostController
-import com.google.gson.Gson
 import sultan.todoapp.R
 import sultan.todoapp.domain.Importance
 import sultan.todoapp.domain.TodoItem
@@ -65,7 +62,6 @@ fun MainScreen(onNavigateToAddTaskScreen: (TodoItem?) -> Unit, viewModel: MainSc
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val todoItems by viewModel.todoItems.collectAsState()
     val showHideVisibility by viewModel.showHideVisibility.collectAsState()
-
 
     MainContent(screenWidth, viewModel, todoItems, showHideVisibility, onNavigateToAddTaskScreen)
 

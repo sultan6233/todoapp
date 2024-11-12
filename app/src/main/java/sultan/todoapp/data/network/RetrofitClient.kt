@@ -22,5 +22,4 @@ object RetrofitClient {
             .build()
         return retrofit
     }
-
 }

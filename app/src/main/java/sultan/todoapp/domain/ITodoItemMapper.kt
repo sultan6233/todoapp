@@ -7,7 +7,6 @@ import java.util.Date
 interface ITodoItemMapper {
     fun mapImportanceToImportanceNetwork(importance: Importance): ImportanceNetwork
 
-
     fun mapLongToDate(date: Long?): Date?
 
     fun mapDateToLong(date: Date?): Long?

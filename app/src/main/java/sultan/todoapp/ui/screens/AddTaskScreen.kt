@@ -60,8 +60,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import sultan.todoapp.R
 import sultan.todoapp.domain.Importance
 import sultan.todoapp.domain.TodoItem
@@ -79,9 +77,10 @@ import java.util.Locale
 
 @Composable
 fun AddTaskScreen(navController: NavHostController, id: String? = null) {
-    initValuesForModifying(id, viewModel())
-
-    AddTaskContent(navController)
+    id?.let {
+        InitValuesForModifying(id, viewModel(), navController)
+    }
+        ?: AddTaskContent(navController, null)
 }
 
 fun convertMillisToLocalDateApi26AndAbove(milliseconds: Long): LocalDate {
@@ -100,14 +99,19 @@ fun formatDateToString(date: Date): String {
     return sdf.format(date)
 }
 
-fun initValuesForModifying(id: String? = null, viewModel: AddTaskViewModel) {
-    id?.let {
-        viewModel.loadTodoItem(it)
-    }
+@Composable
+fun InitValuesForModifying(
+    id: String,
+    viewModel: AddTaskViewModel,
+    navController: NavHostController
+) {
+    viewModel.loadTodoItem(id)
+    val todoItem = viewModel.todoItem.collectAsState().value
+    todoItem?.let { AddTaskContent(navController, it) }
 }
 
 @Composable
-fun AddTaskContent(navController: NavHostController) {
+fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
     val viewModel: AddTaskViewModel = viewModel()
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val paddingTop = screenWidth * 0.1f
@@ -117,15 +121,14 @@ fun AddTaskContent(navController: NavHostController) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val saved = viewModel.saveRequest.collectAsState().value
-
-    val todoItem = viewModel.todoItem.collectAsState().value
-
     LaunchedEffect(saved) {
         when (saved) {
+            is NetworkResult.Loading -> ""
             is NetworkResult.Success<*> -> navController.popBackStack()
-            else -> ""
+            is NetworkResult.Error -> navController.popBackStack()
         }
     }
+
 
     if (viewModel.isCheckBoxChecked.collectAsState().value && selectedDate.value == null) {
         val wrongDateText = stringResource(R.string.wrong_date)
@@ -352,10 +355,7 @@ fun SwipableImportanceTab(viewModel: AddTaskViewModel = viewModel()) {
 
     val selectedTab = viewModel.selectedImportance.collectAsState().value
 
-
-    var selectedTabIndex: Int
-
-    selectedTabIndex = when (selectedTab) {
+    val selectedTabIndex: Int = when (selectedTab) {
         Importance.LOW -> 1
         Importance.MEDIUM -> 0
         Importance.HIGH -> 2
@@ -486,15 +486,7 @@ fun DatePickerModal(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun AddTaskScreenPreview() {
-    val todoItem = TodoItem(
-        "1",
-        "asd",
-        Importance.HIGH,
-        null,
-        false,
-        convertMillisToDate(System.currentTimeMillis())
-    )
-    AddTaskContent(navController = rememberNavController())
+    AddTaskContent(navController = rememberNavController(), null)
 }
 
 @Preview(showBackground = true, showSystemUi = true)
