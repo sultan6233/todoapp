@@ -8,5 +8,5 @@ interface TodoItemsRepository {
     suspend fun getItem(id: String): Flow<NetworkResult>
     fun addItem(item: TodoItem): Flow<NetworkResult>
     fun deleteItem(todoItem: TodoItem): Boolean
-    fun modifyItem(item: TodoItem)
+    fun modifyItem(item: TodoItem): Flow<NetworkResult>
 }

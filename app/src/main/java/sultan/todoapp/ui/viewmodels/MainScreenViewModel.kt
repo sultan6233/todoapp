@@ -20,6 +20,7 @@ import sultan.todoapp.domain.network.NetworkResult
 
 class MainScreenViewModel(private val todoRepository: TodoItemsRepository = TodoItemsRepositoryImpl()) :
     ViewModel() {
+    private val networkScope = viewModelScope
 
     private val _todoItems = MutableStateFlow<Map<String, TodoItem>>(mapOf())
     val todoItems: StateFlow<Map<String, TodoItem>> = _todoItems.asStateFlow()
@@ -39,8 +40,32 @@ class MainScreenViewModel(private val todoRepository: TodoItemsRepository = Todo
         return todoItems.value.filter { it.value.isCompleted }.count()
     }
 
-    fun toggleCheckbox(item: TodoItem) {
-        todoRepository.modifyItem(item)
+    fun toggleCheckbox(item: TodoItem) = networkScope.launch(Dispatchers.IO) {
+        todoRepository.modifyItem(item).collectLatest {
+            when (it) {
+                is NetworkResult.Loading -> ""
+
+                is NetworkResult.Success<*> -> {
+                    _todoItems.value = it.data as Map<String, TodoItem>
+                }
+
+                is NetworkResult.Error.Cancel -> {
+                    TODO()
+                }
+
+                is NetworkResult.Error.IO -> {
+                    Log.d("tesssst", it.message.toString())
+                }
+
+                is NetworkResult.Error.Http -> {
+                    Log.d("tesssst", it.message.toString())
+                }
+
+                is NetworkResult.Error.Parse -> {
+                    Log.d("tesssst", it.message.toString())
+                }
+            }
+        }
         //_todoItems.update { it[item.id] = item }
     }
 
@@ -48,7 +73,7 @@ class MainScreenViewModel(private val todoRepository: TodoItemsRepository = Todo
         _showHideVisibility.update { isVisible }
     }
 
-    fun loadTodoItems() = viewModelScope.launch(Dispatchers.IO) {
+    fun loadTodoItems() = networkScope.launch(Dispatchers.IO) {
         val items = todoRepository.getItems()
         items.collectLatest {
             when (it) {

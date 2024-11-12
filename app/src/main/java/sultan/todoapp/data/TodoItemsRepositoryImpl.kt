@@ -89,7 +89,26 @@ class TodoItemsRepositoryImpl : TodoItemsRepository {
         return true
     }
 
-    override fun modifyItem(item: TodoItem) {
-        TodoItems.changeTodoItemInMap(item)
-    }
+    override fun modifyItem(item: TodoItem) = flow {
+        try {
+            val mapper: ITodoItemMapper = TodoItemMapper()
+            val todoItemNetwork = mapper.mapTodoItemToTodoItemNetwork(item)
+            val todoItemList = TodoItemPost("ok", todoItemNetwork)
+            val response =
+                RetrofitClient.getInstance().create(ApiInterface::class.java)
+                    .postTodoItem(todoItemList, 3)
+            response.body()?.let { todoItemList ->
+                val todoItem = mapper.mapTodoItemNetworkToTodoItem(todoItemList.element)
+                emit(NetworkResult.Success(todoItem))
+            }
+        } catch (e: IOException) {
+            emit(NetworkResult.Error.IO(e.message))
+        } catch (e: HttpException) {
+            emit(NetworkResult.Error.Http(e.message))
+        } catch (e: CancellationException) {
+            emit(NetworkResult.Error.Cancel(e.message))
+        } catch (e: SerializationException) {
+            emit(NetworkResult.Error.Parse(e.message))
+        }
+    }.flowOn(Dispatchers.IO)
 }
