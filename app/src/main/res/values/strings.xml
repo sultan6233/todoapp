@@ -12,4 +12,5 @@
     <string name="cancel">Отмена</string>
     <string name="ready">Готово</string>
     <string name="wrong_date">Дата не может быть меньше сегодняшней</string>
+    <string name="retry">Повторить</string>
 </resources>

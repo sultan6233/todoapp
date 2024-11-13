@@ -1,11 +1,12 @@
-package sultan.todoapp.domain
+package sultan.todoapp.data.database
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import sultan.todoapp.domain.Importance
 import java.util.Date
 
 @Entity
-data class TodoItem(
+data class TodoItemEntity(
     @PrimaryKey
     val id: String,
     val text: String,

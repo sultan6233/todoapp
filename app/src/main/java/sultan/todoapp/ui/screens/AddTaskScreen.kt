@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -59,14 +61,17 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import sultan.todoapp.R
 import sultan.todoapp.domain.Importance
 import sultan.todoapp.domain.TodoItem
 import sultan.todoapp.domain.network.NetworkResult
+import sultan.todoapp.ui.NetworkConnectivityObserver
 import sultan.todoapp.ui.theme.TodoAppTheme
 import sultan.todoapp.ui.theme.withTransparency
 import sultan.todoapp.ui.viewmodels.AddTaskViewModel
+import sultan.todoapp.ui.viewmodels.MainScreenViewModel
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
@@ -79,8 +84,7 @@ import java.util.Locale
 fun AddTaskScreen(navController: NavHostController, id: String? = null) {
     id?.let {
         InitValuesForModifying(id, viewModel(), navController)
-    }
-        ?: AddTaskContent(navController, null)
+    }?: AddTaskContent(navController, null)
 }
 
 fun convertMillisToLocalDateApi26AndAbove(milliseconds: Long): LocalDate {
@@ -111,6 +115,35 @@ fun InitValuesForModifying(
 }
 
 @Composable
+fun ErrorSnackbarForAddScreen(viewModel: AddTaskViewModel) {
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(scope) {
+        viewModel.errorMessages.collectLatest {
+            snackbarHostState.showSnackbar(
+                it,
+                duration = SnackbarDuration.Short,
+                withDismissAction = false
+            )
+        }
+
+    }
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        SnackbarHost(
+            hostState = snackbarHostState,
+            snackbar = {
+                Snackbar(
+                    it,
+                    contentColor = MaterialTheme.colorScheme.error,
+                    containerColor = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        )
+    }
+}
+
+@Composable
 fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
     val viewModel: AddTaskViewModel = viewModel()
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
@@ -122,20 +155,17 @@ fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
     val scope = rememberCoroutineScope()
     val saved = viewModel.saveRequest.collectAsState().value
     LaunchedEffect(saved) {
-        when (saved) {
-            is NetworkResult.Loading -> ""
-            is NetworkResult.Success<*> -> navController.popBackStack()
-            is NetworkResult.Error -> navController.popBackStack()
+        if (saved) {
+            navController.popBackStack()
         }
     }
-
+    ErrorSnackbarForAddScreen(viewModel)
 
     if (viewModel.isCheckBoxChecked.collectAsState().value && selectedDate.value == null) {
         val wrongDateText = stringResource(R.string.wrong_date)
         DatePickerModal(onDateSelected = {
             it?.let {
                 if (it > System.currentTimeMillis()) {
-
                     viewModel.selectDate(convertMillisToDate(it))
                 } else {
                     scope.launch {
@@ -174,10 +204,12 @@ fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
             SaveText(onClick = {
                 if (taskText.isNotEmpty()) {
                     scope.launch {
-                        viewModel.saveTask()
+                        todoItem?.let {
+                            viewModel.modifyTask()
+                        } ?: viewModel.saveTask()
                     }
                 }
-            })
+            }, viewModel.saveLoading.collectAsState().value)
         }
         TaskEditText(viewModel)
         SwipableImportanceTab(viewModel)
@@ -218,10 +250,7 @@ fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
 
         DeleteButton(
             onClick = {
-                todoItem?.let {
-                    viewModel.deleteTask(it)
-                    navController.popBackStack()
-                } ?: navController.popBackStack()
+                todoItem?.let { viewModel.deleteTask(it) }?:navController.popBackStack()
             }, viewModel.taskText.collectAsState().value.isNotEmpty()
         )
 
@@ -300,13 +329,21 @@ fun CloseIcon(onClick: () -> Unit) {
 }
 
 @Composable
-fun SaveText(onClick: () -> Unit) {
-    Text(
-        stringResource(R.string.save),
-        color = MaterialTheme.colorScheme.onPrimaryContainer,
-        modifier = Modifier.clickable {
-            onClick()
-        })
+fun SaveText(onClick: () -> Unit, isLoading: Boolean) {
+    if (isLoading) {
+        CircularProgressIndicator(
+            strokeWidth = 6.dp,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    } else {
+        Text(
+            stringResource(R.string.save),
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.clickable {
+                onClick()
+            })
+    }
+
 }
 
 @Composable

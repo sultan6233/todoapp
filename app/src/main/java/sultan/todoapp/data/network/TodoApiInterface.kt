@@ -30,7 +30,9 @@ interface ApiInterface {
     @Headers("Authorization: Bearer Galathil")
     @PUT("list/{id}")
     suspend fun modifyTodoItem(
-        @Path("id") id: String
+        @Path("id") id: String,
+        @Body todoItemPost: TodoItemPost,
+        @Header("X-Last-Known-Revision") revision: Int
     ): Response<TodoItemPost>
 
     @Headers("Authorization: Bearer Galathil")

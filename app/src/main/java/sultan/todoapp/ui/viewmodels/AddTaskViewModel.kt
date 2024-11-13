@@ -4,7 +4,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -21,10 +24,11 @@ import java.util.UUID
 
 class AddTaskViewModel(private val todoItemsRepository: TodoItemsRepository = TodoItemsRepositoryImpl()) :
     ViewModel() {
+    private val networkScope = viewModelScope
+
     private val _isCheckBoxChecked = MutableStateFlow(false)
 
     val isCheckBoxChecked: StateFlow<Boolean> = _isCheckBoxChecked.asStateFlow()
-
 
     private val _selectedDate: MutableStateFlow<Date?> = MutableStateFlow(null)
     val selectedDate: StateFlow<Date?> = _selectedDate.asStateFlow()
@@ -36,9 +40,9 @@ class AddTaskViewModel(private val todoItemsRepository: TodoItemsRepository = To
     private val _selectedImportance: MutableStateFlow<Importance> = MutableStateFlow(Importance.LOW)
     val selectedImportance: StateFlow<Importance> = _selectedImportance.asStateFlow()
 
-    private val _saveRequest: MutableStateFlow<NetworkResult> =
-        MutableStateFlow(NetworkResult.Loading)
-    val saveRequest: StateFlow<NetworkResult> = _saveRequest.asStateFlow()
+    private val _saveRequest: MutableStateFlow<Boolean> =
+        MutableStateFlow(false)
+    val saveRequest: StateFlow<Boolean> = _saveRequest.asStateFlow()
 
     private val _todoItem: MutableStateFlow<TodoItem?> =
         MutableStateFlow(null)
@@ -47,6 +51,13 @@ class AddTaskViewModel(private val todoItemsRepository: TodoItemsRepository = To
     var createdAt: Date = convertMillisToDate(System.currentTimeMillis())
     var modifiedAt: Date? = null
     var isCompleted: Boolean = false
+
+    private val _errorMessages = MutableSharedFlow<String>()
+    val errorMessages: SharedFlow<String> = _errorMessages
+
+    private val _saveLoading = MutableStateFlow(false)
+    val saveLoading: StateFlow<Boolean> = _saveLoading.asStateFlow()
+
 
     var id = UUID.randomUUID().toString()
 
@@ -70,11 +81,74 @@ class AddTaskViewModel(private val todoItemsRepository: TodoItemsRepository = To
         _selectedDate.value = date
     }
 
-    fun deleteTask(todoItem: TodoItem) {
-        todoItemsRepository.deleteItem(todoItem)
+    fun deleteTask(todoItem: TodoItem) = networkScope.launch(SupervisorJob() + Dispatchers.IO) {
+        _saveLoading.value = true
+        todoItemsRepository.deleteItem(todoItem).collectLatest {
+            _saveLoading.value = false
+            when (it) {
+                is NetworkResult.Loading -> ""
+
+                is NetworkResult.Success<*> -> _saveRequest.value = true
+
+
+                is NetworkResult.Error.Cancel -> {
+                    _errorMessages.emit("Запрос был отменён")
+                }
+
+                is NetworkResult.Error.IO -> {
+                    _errorMessages.emit("Ошибка сети. Попробуйте вернуться назад")
+                }
+
+                is NetworkResult.Error.Http -> {
+                    _errorMessages.emit("Ошибка сервера. Попробуйте вернуться назад")
+                }
+
+                is NetworkResult.Error.Parse -> {
+                    _errorMessages.emit("Ошибка обработки данных. Попробуйте вернуться назад")
+                }
+            }
+        }
     }
 
     suspend fun saveTask() {
+        _saveLoading.value = true
+        val todoItem = TodoItem(
+            id = id,
+            text = _taskText.value,
+            importance = _selectedImportance.value,
+            deadline = _selectedDate.value,
+            isCompleted = isCompleted,
+            createdAt = createdAt,
+            modifiedAt
+        )
+        todoItemsRepository.addItem(todoItem).collectLatest {
+            _saveLoading.value = false
+            when (it) {
+                is NetworkResult.Loading -> ""
+
+                is NetworkResult.Success<*> -> _saveRequest.value = true
+
+
+                is NetworkResult.Error.Cancel -> {
+                    _errorMessages.emit("Запрос был отменён")
+                }
+
+                is NetworkResult.Error.IO -> {
+                    _errorMessages.emit("Ошибка сети. Попробуйте вернуться назад")
+                }
+
+                is NetworkResult.Error.Http -> {
+                    _errorMessages.emit("Ошибка сервера. Попробуйте вернуться назад")
+                }
+
+                is NetworkResult.Error.Parse -> {
+                    _errorMessages.emit("Ошибка обработки данных. Попробуйте вернуться назад")
+                }
+            }
+        }
+    }
+
+    suspend fun modifyTask() {
         val todoItem = TodoItem(
             id = id,
             text = _taskText.value,
@@ -85,12 +159,33 @@ class AddTaskViewModel(private val todoItemsRepository: TodoItemsRepository = To
             modifiedAt
         )
 
-        todoItemsRepository.addItem(todoItem).collectLatest {
-            _saveRequest.value = it
+        todoItemsRepository.modifyItem(todoItem).collectLatest {
+            when (it) {
+                is NetworkResult.Loading -> ""
+
+                is NetworkResult.Success<*> -> _saveRequest.value = true
+
+
+                is NetworkResult.Error.Cancel -> {
+                    _errorMessages.emit("Запрос был отменён")
+                }
+
+                is NetworkResult.Error.IO -> {
+                    _errorMessages.emit("Ошибка сети. Попробуйте вернуться назад")
+                }
+
+                is NetworkResult.Error.Http -> {
+                    _errorMessages.emit("Ошибка сервера. Попробуйте вернуться назад")
+                }
+
+                is NetworkResult.Error.Parse -> {
+                    _errorMessages.emit("Ошибка обработки данных. Попробуйте вернуться назад")
+                }
+            }
         }
     }
 
-    fun loadTodoItem(savedId: String) = viewModelScope.launch(Dispatchers.IO) {
+    fun loadTodoItem(savedId: String) = viewModelScope.launch(SupervisorJob() + Dispatchers.IO) {
         val items = todoItemsRepository.getItem(savedId)
         items.collectLatest {
             when (it) {
@@ -110,19 +205,19 @@ class AddTaskViewModel(private val todoItemsRepository: TodoItemsRepository = To
                 }
 
                 is NetworkResult.Error.Cancel -> {
-                    Log.d("tesssst", it.message.toString())
+                    _errorMessages.emit("Запрос был отменён")
                 }
 
                 is NetworkResult.Error.IO -> {
-                    Log.d("tesssst", it.message.toString())
+                    _errorMessages.emit("Ошибка сети. Попробуйте вернуться назад")
                 }
 
                 is NetworkResult.Error.Http -> {
-                    Log.d("tesssst", it.message.toString())
+                    _errorMessages.emit("Ошибка сервера. Попробуйте вернуться назад")
                 }
 
                 is NetworkResult.Error.Parse -> {
-                    Log.d("tesssst", it.message.toString())
+                    _errorMessages.emit("Ошибка обработки данных. Попробуйте вернуться назад")
                 }
             }
         }

@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.Checkbox
@@ -24,21 +26,27 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -49,9 +57,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import sultan.todoapp.R
 import sultan.todoapp.domain.Importance
 import sultan.todoapp.domain.TodoItem
+import sultan.todoapp.ui.NetworkConnectivityObserver
 import sultan.todoapp.ui.theme.TodoAppTheme
 import sultan.todoapp.ui.theme.taskCheckBoxColors
 import sultan.todoapp.ui.theme.withTransparency
@@ -62,10 +75,71 @@ fun MainScreen(onNavigateToAddTaskScreen: (TodoItem?) -> Unit, viewModel: MainSc
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val todoItems by viewModel.todoItems.collectAsState()
     val showHideVisibility by viewModel.showHideVisibility.collectAsState()
+    val screenScope = rememberCoroutineScope()
+
+
 
     MainContent(screenWidth, viewModel, todoItems, showHideVisibility, onNavigateToAddTaskScreen)
 
-    viewModel.loadTodoItems()
+    LaunchedEffect(Unit) {
+        screenScope.launch {
+            viewModel.loadTodoItems()
+        }
+    }
+}
+
+@Composable
+fun ErrorSnackbar(viewModel: MainScreenViewModel) {
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(scope) {
+        viewModel.errorMessages.collectLatest {
+            snackbarHostState.showSnackbar(
+                it,
+                duration = SnackbarDuration.Short,
+                withDismissAction = false
+            )
+        }
+
+    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        val show = viewModel.showButton.collectAsState().value
+        if (show) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                RetryButton(onClick = { viewModel.loadTodoItems() })
+            }
+        }
+
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                snackbar = {
+                    Snackbar(
+                        it,
+                        contentColor = MaterialTheme.colorScheme.error,
+                        containerColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            )
+        }
+    }
+    viewModel.observeNetworkChanges(NetworkConnectivityObserver(LocalContext.current))
+}
+
+@Composable
+fun RetryButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onPrimaryContainer),
+    ) {
+        Text(
+            text = stringResource(R.string.retry),
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(10.dp)
+        )
+    }
+
 }
 
 @Composable
@@ -77,6 +151,13 @@ fun MainContent(
     onNavigateToAddTaskScreen: (TodoItem?) -> Unit
 ) {
     val paddingStart = screenWidth * 0.2f
+    val checkBoxScope = rememberCoroutineScope()
+    DisposableEffect(Unit) {
+        onDispose {
+            checkBoxScope.cancel()
+        }
+    }
+
     Box(contentAlignment = Alignment.BottomEnd, modifier = Modifier) {
         Column(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -113,13 +194,14 @@ fun MainContent(
                                 item,
                                 viewModel,
                                 isFirst,
-                                onModifyClick = { onNavigateToAddTaskScreen(item) })
+                                onModifyClick = { onNavigateToAddTaskScreen(item) }, checkBoxScope
+                            )
                         }
                     } else {
                         val isFirst = todoItems.keys.first() == key
                         TasksList(item, viewModel, isFirst, onModifyClick = {
                             onNavigateToAddTaskScreen(item)
-                        })
+                        }, checkBoxScope)
                     }
                 }
             }
@@ -128,6 +210,13 @@ fun MainContent(
         FABAdd(modifier = Modifier.padding(end = 12.dp, bottom = paddingStart), onClick = {
             onNavigateToAddTaskScreen(null)
         })
+
+
+        if (todoItems.toList().isEmpty()) {
+            ErrorSnackbar(viewModel)
+        }
+
+
     }
 
 
@@ -170,7 +259,10 @@ fun DoneText(text: String) {
 
 @Composable
 fun TaskCheckbox(
-    checkboxColors: CheckboxColors, viewModel: MainScreenViewModel, item: TodoItem
+    checkboxColors: CheckboxColors,
+    viewModel: MainScreenViewModel,
+    item: TodoItem,
+    scope: CoroutineScope
 ) {
     Box(
         modifier = Modifier
@@ -183,7 +275,9 @@ fun TaskCheckbox(
     ) {
         Checkbox(
             checked = item.isCompleted, onCheckedChange = {
-                viewModel.toggleCheckbox(item.copy(isCompleted = it))
+                scope.launch {
+                    viewModel.toggleCheckbox(item.copy(isCompleted = it))
+                }
             }, colors = checkboxColors, modifier = Modifier.size(24.dp)
         )
     }
@@ -231,7 +325,8 @@ fun TaskContent(
     item: TodoItem,
     viewModel: MainScreenViewModel,
     firstItem: Boolean,
-    onModifyClick: () -> Unit
+    onModifyClick: () -> Unit,
+    scope: CoroutineScope
 ) {
     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
         Card(
@@ -252,7 +347,7 @@ fun TaskContent(
                 modifier = Modifier.padding(start = 6.dp, end = 6.dp, top = 10.dp)
             ) {
                 TaskCheckbox(
-                    taskCheckBoxColors(item.importance), viewModel, item
+                    taskCheckBoxColors(item.importance), viewModel, item, scope
                 )
                 Column(
                     modifier = Modifier.weight(1f),
@@ -282,9 +377,10 @@ fun TasksList(
     item: TodoItem,
     viewModel: MainScreenViewModel = viewModel(),
     firstItem: Boolean,
-    onModifyClick: () -> Unit
+    onModifyClick: () -> Unit,
+    scope: CoroutineScope
 ) {
-    TaskContent(item, viewModel, firstItem, onModifyClick = onModifyClick)
+    TaskContent(item, viewModel, firstItem, onModifyClick, scope)
 }
 
 @Composable
