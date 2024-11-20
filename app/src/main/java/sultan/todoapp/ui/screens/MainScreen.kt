@@ -56,6 +56,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
@@ -76,14 +79,14 @@ fun MainScreen(onNavigateToAddTaskScreen: (TodoItem?) -> Unit, viewModel: MainSc
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val todoItems by viewModel.todoItems.collectAsState()
     val showHideVisibility by viewModel.showHideVisibility.collectAsState()
-    val screenScope = rememberCoroutineScope()
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
 
 
 
     MainContent(screenWidth, viewModel, todoItems, showHideVisibility, onNavigateToAddTaskScreen)
 
     LaunchedEffect(Unit) {
-        screenScope.launch {
+        lifecycle.repeatOnLifecycle(state = Lifecycle.State.STARTED) {
             viewModel.loadTodoItems()
         }
     }
