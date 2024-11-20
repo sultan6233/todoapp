@@ -1,6 +1,5 @@
 package sultan.todoapp.ui.viewmodels
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -9,23 +8,30 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import sultan.todoapp.TodoItems
+import sultan.todoapp.App
 import sultan.todoapp.data.TodoItemsRepositoryImpl
+import sultan.todoapp.data.database.LocalDataSource
+import sultan.todoapp.data.database.converters.Converters
+import sultan.todoapp.data.network.RemoteDataSource
 import sultan.todoapp.domain.Importance
 import sultan.todoapp.domain.TodoItem
 import sultan.todoapp.domain.TodoItemsRepository
 import sultan.todoapp.domain.network.NetworkResult
-import sultan.todoapp.ui.screens.convertMillisToDate
 import java.util.Date
 import java.util.UUID
 
-class AddTaskViewModel(private val todoItemsRepository: TodoItemsRepository = TodoItemsRepositoryImpl()) :
+class AddTaskViewModel(
+    private val todoItemsRepository: TodoItemsRepository = TodoItemsRepositoryImpl(
+        LocalDataSource(App.INSTANCE.db), RemoteDataSource()
+    )
+) :
     ViewModel() {
-    private val networkScope = viewModelScope
 
+    val converter = Converters()
     private val _isCheckBoxChecked = MutableStateFlow(false)
 
     val isCheckBoxChecked: StateFlow<Boolean> = _isCheckBoxChecked.asStateFlow()
@@ -48,12 +54,12 @@ class AddTaskViewModel(private val todoItemsRepository: TodoItemsRepository = To
         MutableStateFlow(null)
     val todoItem: StateFlow<TodoItem?> = _todoItem.asStateFlow()
 
-    var createdAt: Date = convertMillisToDate(System.currentTimeMillis())
+    var createdAt: Date = Date(System.currentTimeMillis())
     var modifiedAt: Date? = null
     var isCompleted: Boolean = false
 
     private val _errorMessages = MutableSharedFlow<String>()
-    val errorMessages: SharedFlow<String> = _errorMessages
+    val errorMessages: SharedFlow<String> = _errorMessages.asSharedFlow()
 
     private val _saveLoading = MutableStateFlow(false)
     val saveLoading: StateFlow<Boolean> = _saveLoading.asStateFlow()
@@ -81,12 +87,12 @@ class AddTaskViewModel(private val todoItemsRepository: TodoItemsRepository = To
         _selectedDate.value = date
     }
 
-    fun deleteTask(todoItem: TodoItem) = networkScope.launch(SupervisorJob() + Dispatchers.IO) {
+    fun deleteTask(todoItem: TodoItem) = viewModelScope.launch(SupervisorJob() + Dispatchers.IO) {
         _saveLoading.value = true
         todoItemsRepository.deleteItem(todoItem).collectLatest {
             _saveLoading.value = false
             when (it) {
-                is NetworkResult.Loading -> ""
+                is NetworkResult.Loading -> Unit
 
                 is NetworkResult.Success<*> -> _saveRequest.value = true
 
@@ -124,7 +130,7 @@ class AddTaskViewModel(private val todoItemsRepository: TodoItemsRepository = To
         todoItemsRepository.addItem(todoItem).collectLatest {
             _saveLoading.value = false
             when (it) {
-                is NetworkResult.Loading -> ""
+                is NetworkResult.Loading -> Unit
 
                 is NetworkResult.Success<*> -> _saveRequest.value = true
 
@@ -161,7 +167,7 @@ class AddTaskViewModel(private val todoItemsRepository: TodoItemsRepository = To
 
         todoItemsRepository.modifyItem(todoItem).collectLatest {
             when (it) {
-                is NetworkResult.Loading -> ""
+                is NetworkResult.Loading -> Unit
 
                 is NetworkResult.Success<*> -> _saveRequest.value = true
 
@@ -189,7 +195,7 @@ class AddTaskViewModel(private val todoItemsRepository: TodoItemsRepository = To
         val items = todoItemsRepository.getItem(savedId)
         items.collectLatest {
             when (it) {
-                is NetworkResult.Loading -> ""
+                is NetworkResult.Loading -> Unit
 
                 is NetworkResult.Success<*> -> {
                     val todoItem = it.data as TodoItem
@@ -222,6 +228,4 @@ class AddTaskViewModel(private val todoItemsRepository: TodoItemsRepository = To
             }
         }
     }
-
-
 }

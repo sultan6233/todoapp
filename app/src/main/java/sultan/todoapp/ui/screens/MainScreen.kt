@@ -61,6 +61,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import sultan.todoapp.DateUtils.formatDateToString
 import sultan.todoapp.R
 import sultan.todoapp.domain.Importance
 import sultan.todoapp.domain.TodoItem
@@ -152,11 +153,10 @@ fun MainContent(
 ) {
     val paddingStart = screenWidth * 0.2f
     val checkBoxScope = rememberCoroutineScope()
-    DisposableEffect(Unit) {
-        onDispose {
-            checkBoxScope.cancel()
-        }
-    }
+
+    val isChecked = viewModel.isDarkTheme.collectAsState().value
+
+    val isShowHideVisible = viewModel.showHideVisibility.collectAsState().value
 
     Box(contentAlignment = Alignment.BottomEnd, modifier = Modifier) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -171,7 +171,9 @@ fun MainContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     MyTasksTitleText()
-                    ChangeThemeSwitch(viewModel)
+                    ChangeThemeSwitch(
+                        isChecked,
+                        onCheckedChange = { viewModel.toggleTheme(it) })
                 }
 
                 Row(
@@ -180,7 +182,9 @@ fun MainContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     DoneText(viewModel.countDoneTasks().toString())
-                    ShowHideIconButton(viewModel)
+                    ShowHideIconButton(isShowHideVisible, onClick = {
+                        viewModel.toggleShowHide()
+                    })
                 }
 
             }
@@ -223,13 +227,9 @@ fun MainContent(
 }
 
 @Composable
-fun ChangeThemeSwitch(viewModel: MainScreenViewModel) {
-    val isChecked = viewModel.isDarkTheme.collectAsState()
+fun ChangeThemeSwitch(isChecked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Switch(
-        isChecked.value, onCheckedChange = {
-            viewModel.toggleTheme(it)
-
-        }, colors = SwitchDefaults.colors(
+        isChecked, onCheckedChange = { onCheckedChange(it) }, colors = SwitchDefaults.colors(
             checkedThumbColor = MaterialTheme.colorScheme.onPrimaryContainer,
             uncheckedThumbColor = MaterialTheme.colorScheme.onSecondary,
             checkedTrackColor = MaterialTheme.colorScheme.onPrimaryContainer.withTransparency(0.3f),
@@ -259,10 +259,8 @@ fun DoneText(text: String) {
 
 @Composable
 fun TaskCheckbox(
-    checkboxColors: CheckboxColors,
-    viewModel: MainScreenViewModel,
-    item: TodoItem,
-    scope: CoroutineScope
+    checkboxColors: CheckboxColors, onCheckedChange: (Boolean) -> Unit,
+    item: TodoItem
 ) {
     Box(
         modifier = Modifier
@@ -274,11 +272,10 @@ fun TaskCheckbox(
             )
     ) {
         Checkbox(
-            checked = item.isCompleted, onCheckedChange = {
-                scope.launch {
-                    viewModel.toggleCheckbox(item.copy(isCompleted = it))
-                }
-            }, colors = checkboxColors, modifier = Modifier.size(24.dp)
+            checked = item.isCompleted,
+            onCheckedChange = { onCheckedChange(it) },
+            colors = checkboxColors,
+            modifier = Modifier.size(24.dp)
         )
     }
 }
@@ -323,10 +320,9 @@ fun InfoImage(onClick: () -> Unit) {
 @Composable
 fun TaskContent(
     item: TodoItem,
-    viewModel: MainScreenViewModel,
+    onCheckedChange: (Boolean) -> Unit,
     firstItem: Boolean,
-    onModifyClick: () -> Unit,
-    scope: CoroutineScope
+    onModifyClick: () -> Unit
 ) {
     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
         Card(
@@ -347,7 +343,9 @@ fun TaskContent(
                 modifier = Modifier.padding(start = 6.dp, end = 6.dp, top = 10.dp)
             ) {
                 TaskCheckbox(
-                    taskCheckBoxColors(item.importance), viewModel, item, scope
+                    taskCheckBoxColors(item.importance), onCheckedChange = {
+                        onCheckedChange(it)
+                    }, item
                 )
                 Column(
                     modifier = Modifier.weight(1f),
@@ -375,12 +373,23 @@ fun TaskContent(
 @Composable
 fun TasksList(
     item: TodoItem,
-    viewModel: MainScreenViewModel = viewModel(),
+    viewModel: MainScreenViewModel,
     firstItem: Boolean,
     onModifyClick: () -> Unit,
     scope: CoroutineScope
 ) {
-    TaskContent(item, viewModel, firstItem, onModifyClick, scope)
+    TaskContent(
+        item = item,
+        onCheckedChange = {
+            scope.launch {
+                viewModel.toggleCheckbox(
+                    item.copy(
+                        isCompleted = it
+                    )
+                )
+            }
+        }, firstItem = firstItem, onModifyClick = onModifyClick
+    )
 }
 
 @Composable
@@ -394,12 +403,10 @@ fun TaskDeadlineText(text: String) {
 }
 
 @Composable
-fun ShowHideIconButton(viewModel: MainScreenViewModel = viewModel()) {
-    val isVisible = viewModel.showHideVisibility.collectAsState().value
+fun ShowHideIconButton(isVisible: Boolean, onClick: () -> Unit) {
 
-    IconButton(onClick = {
-        viewModel.toggleShowHide(!isVisible)
-    }) {
+
+    IconButton(onClick = onClick) {
         Icon(
             painter = if (isVisible) painterResource(R.drawable.icon_show) else painterResource(
                 R.drawable.icon_hide

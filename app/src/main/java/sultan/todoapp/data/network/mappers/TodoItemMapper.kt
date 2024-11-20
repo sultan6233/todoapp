@@ -1,6 +1,6 @@
 package sultan.todoapp.data.network.mappers
 
-import sultan.todoapp.App
+import sultan.todoapp.data.GlobalProperties.deviceId
 import sultan.todoapp.data.network.models.ImportanceNetwork
 import sultan.todoapp.data.network.models.TodoItemNetwork
 import sultan.todoapp.domain.ITodoItemMapper
@@ -58,7 +58,7 @@ class TodoItemMapper : ITodoItemMapper {
             modifiedAt = if (todoItem.modifiedAt == null) mapDateToLong(todoItem.createdAt)!! else mapDateToLong(
                 todoItem.modifiedAt
             )!!,
-            lastUpdatedBy = App.deviceId
+            lastUpdatedBy = deviceId
         )
     }
 

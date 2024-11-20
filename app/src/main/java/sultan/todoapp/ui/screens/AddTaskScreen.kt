@@ -51,7 +51,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -63,15 +62,14 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import sultan.todoapp.DateUtils.formatDateToString
 import sultan.todoapp.R
+import sultan.todoapp.data.database.converters.Converters
 import sultan.todoapp.domain.Importance
 import sultan.todoapp.domain.TodoItem
-import sultan.todoapp.domain.network.NetworkResult
-import sultan.todoapp.ui.NetworkConnectivityObserver
 import sultan.todoapp.ui.theme.TodoAppTheme
 import sultan.todoapp.ui.theme.withTransparency
 import sultan.todoapp.ui.viewmodels.AddTaskViewModel
-import sultan.todoapp.ui.viewmodels.MainScreenViewModel
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
@@ -84,23 +82,7 @@ import java.util.Locale
 fun AddTaskScreen(navController: NavHostController, id: String? = null) {
     id?.let {
         InitValuesForModifying(id, viewModel(), navController)
-    }?: AddTaskContent(navController, null)
-}
-
-fun convertMillisToLocalDateApi26AndAbove(milliseconds: Long): LocalDate {
-    return Instant.ofEpochMilli(milliseconds).atZone(ZoneId.systemDefault()).toLocalDate()
-}
-
-fun convertMillisToDate(milliseconds: Long): Date {
-    convertMillisToLocalDateApi26AndAbove(milliseconds)
-    return Date.from(Instant.ofEpochMilli(milliseconds))
-}
-
-
-fun formatDateToString(date: Date): String {
-    val pattern = "d MMMM yyyy"
-    val sdf = SimpleDateFormat(pattern, Locale.getDefault())
-    return sdf.format(date)
+    } ?: AddTaskContent(navController, null)
 }
 
 @Composable
@@ -151,9 +133,14 @@ fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
     val selectedDate = viewModel.selectedDate.collectAsState()
     val taskText = viewModel.taskText.collectAsState().value
 
+    val savedEditTextText = viewModel.taskText.collectAsState()
+
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val saved = viewModel.saveRequest.collectAsState().value
+
+    val isChecked = viewModel.isCheckBoxChecked.collectAsState().value
+    val dateSpecified = viewModel.selectedDate.collectAsState().value
     LaunchedEffect(saved) {
         if (saved) {
             navController.popBackStack()
@@ -166,7 +153,7 @@ fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
         DatePickerModal(onDateSelected = {
             it?.let {
                 if (it > System.currentTimeMillis()) {
-                    viewModel.selectDate(convertMillisToDate(it))
+                    viewModel.selectDate(viewModel.converter.toDate(it))
                 } else {
                     scope.launch {
                         snackbarHostState.showSnackbar(
@@ -211,8 +198,20 @@ fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
                 }
             }, viewModel.saveLoading.collectAsState().value)
         }
-        TaskEditText(viewModel)
-        SwipableImportanceTab(viewModel)
+        TaskEditText(savedEditTextText.value, onTextChange = { viewModel.taskTextChange(it) })
+        val selectedTab = viewModel.selectedImportance.collectAsState().value
+        SwipableImportanceTab(selectedTab, onClick = {
+            viewModel.changeImportance(
+                when (it) {
+                    0 -> Importance.MEDIUM
+                    1 -> Importance.LOW
+                    2 -> Importance.HIGH
+                    else -> {
+                        Importance.LOW
+                    }
+                }
+            )
+        })
         HorizontalDivider(
             modifier = Modifier
                 .fillMaxWidth()
@@ -227,7 +226,12 @@ fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            DateTaskEnd(viewModel)
+            DateTaskEnd(
+                isChecked,
+                dateSpecified?.let { formatDateToString(dateSpecified) },
+                onCheckedChange = {
+                    viewModel.toggleCheckBox()
+                })
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
@@ -250,7 +254,7 @@ fun AddTaskContent(navController: NavHostController, todoItem: TodoItem?) {
 
         DeleteButton(
             onClick = {
-                todoItem?.let { viewModel.deleteTask(it) }?:navController.popBackStack()
+                todoItem?.let { viewModel.deleteTask(it) } ?: navController.popBackStack()
             }, viewModel.taskText.collectAsState().value.isNotEmpty()
         )
 
@@ -289,9 +293,7 @@ fun DeleteButton(onClick: () -> Unit, isEnabled: Boolean) {
 
 
 @Composable
-fun DateTaskEnd(viewModel: AddTaskViewModel = viewModel()) {
-    val isChecked = viewModel.isCheckBoxChecked.collectAsState().value
-    val dateSpecified = viewModel.selectedDate.collectAsState().value
+fun DateTaskEnd(isChecked: Boolean, dateSpecified: String?, onCheckedChange: (Boolean) -> Unit) {
     Column {
         Text(
             text = stringResource(R.string.do_till), color = MaterialTheme.colorScheme.onPrimary
@@ -299,16 +301,13 @@ fun DateTaskEnd(viewModel: AddTaskViewModel = viewModel()) {
 
         dateSpecified?.let {
             Text(
-                text = formatDateToString(it), color = MaterialTheme.colorScheme.onPrimaryContainer
+                text = it, color = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
 
     }
     Switch(
-        isChecked, onCheckedChange = {
-
-            viewModel.toggleCheckBox()
-        }, colors = SwitchDefaults.colors(
+        isChecked, onCheckedChange = onCheckedChange, colors = SwitchDefaults.colors(
             checkedThumbColor = MaterialTheme.colorScheme.onPrimaryContainer,
             uncheckedThumbColor = MaterialTheme.colorScheme.onSecondary,
             checkedTrackColor = MaterialTheme.colorScheme.onPrimaryContainer.withTransparency(0.3f),
@@ -347,15 +346,15 @@ fun SaveText(onClick: () -> Unit, isLoading: Boolean) {
 }
 
 @Composable
-fun TaskEditText(viewModel: AddTaskViewModel) {
+fun TaskEditText(savedText: String, onTextChange: (String) -> Unit) {
 
-    val savedText = viewModel.taskText.collectAsState()
     var isFocused by remember { mutableStateOf(false) }
 
     OutlinedTextField(
-        value = savedText.value,
+        value = savedText,
         onValueChange = { newText ->
-            viewModel.taskTextChange(newText)
+            onTextChange(newText)
+            //  viewModel.taskTextChange(newText)
         },
         placeholder = {
 
@@ -383,14 +382,13 @@ fun TaskEditText(viewModel: AddTaskViewModel) {
 }
 
 @Composable
-fun SwipableImportanceTab(viewModel: AddTaskViewModel = viewModel()) {
+fun SwipableImportanceTab(selectedTab: Importance, onClick: (Int) -> Unit) {
     val tabsList = listOf(
         Pair(painterResource(R.drawable.icon_importance_medium), null),
         Pair(null, stringResource(R.string.no)),
         Pair(painterResource(R.drawable.icon_importance_high), null)
     )
 
-    val selectedTab = viewModel.selectedImportance.collectAsState().value
 
     val selectedTabIndex: Int = when (selectedTab) {
         Importance.LOW -> 1
@@ -435,19 +433,7 @@ fun SwipableImportanceTab(viewModel: AddTaskViewModel = viewModel()) {
                     } else {
                         null
                     },
-                    onClick = {
-
-                        viewModel.changeImportance(
-                            when (tabIndex) {
-                                0 -> Importance.MEDIUM
-                                1 -> Importance.LOW
-                                2 -> Importance.HIGH
-                                else -> {
-                                    Importance.LOW
-                                }
-                            }
-                        )
-                    },
+                    onClick = { onClick(tabIndex) },
                     label = {
                         if (icon != null) {
                             Icon(

@@ -7,9 +7,12 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import kotlinx.coroutines.flow.collectLatest
+import sultan.todoapp.App
 import sultan.todoapp.data.TodoItemsRepositoryImpl
 import sultan.todoapp.data.database.AppDatabase
+import sultan.todoapp.data.database.LocalDataSource
 import sultan.todoapp.data.database.TodoItemEntity
+import sultan.todoapp.data.network.RemoteDataSource
 import sultan.todoapp.domain.TodoItem
 import sultan.todoapp.domain.TodoItemsRepository
 import sultan.todoapp.domain.network.NetworkResult
@@ -29,25 +32,23 @@ class TodoItemsListUpdateWorker(
         }
     }
 
-    private suspend fun updateData(todoItemsRepository: TodoItemsRepository = TodoItemsRepositoryImpl()) {
+    private suspend fun updateData(
+        todoItemsRepository: TodoItemsRepository = TodoItemsRepositoryImpl(
+            LocalDataSource(App.INSTANCE.db),
+            RemoteDataSource()
+        )
+    ) {
         todoItemsRepository.getItems().collectLatest {
             when (it) {
                 is NetworkResult.Success<*> -> {
-                    val todoItems  = (it.data as Map<String, TodoItem>).map { it.value }.toTypedArray()
-                    insertData(todoItems)
+                    val todoItems =
+                        (it.data as Map<String, TodoItem>).map { it.value }.toTypedArray()
+                    todoItemsRepository.addItems(*todoItems)
                     Result.success()
                 }
+
                 else -> Result.retry()
             }
         }
-    }
-
-    private fun insertData(todoItemEntity: Array<TodoItem>) {
-        val db = Room.databaseBuilder(
-            applicationContext,
-            AppDatabase::class.java, "todoitems_database"
-        ).build()
-        val dao = db.todoDao()
-        dao.insertAll(*todoItemEntity)
     }
 }
