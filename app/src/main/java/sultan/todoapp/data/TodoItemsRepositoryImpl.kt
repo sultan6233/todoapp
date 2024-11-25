@@ -22,7 +22,7 @@ import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.Volatile
 
-class TodoItemsRepositoryImpl : TodoItemsRepository {
+class TodoItemsRepositoryImpl @Inject constructor() : TodoItemsRepository {
 
     override suspend fun getItems() = flow {
         try {
