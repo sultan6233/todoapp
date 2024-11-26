@@ -21,4 +21,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "Todo App"
 include(":app")
- 
+include(":featureUi")
+include(":domain")
+include(":featureDatabase")
+include(":featureNetwork")

@@ -1,15 +1,13 @@
 package sultan.todoapp.data
 
 import kotlinx.coroutines.flow.Flow
-import sultan.todoapp.data.database.LocalDataSource
-import sultan.todoapp.data.network.RemoteDataSource
-import sultan.todoapp.domain.TodoItem
-import sultan.todoapp.domain.TodoItemsRepository
+import sultan.todoapp.featuredatabase.database.LocalDataSource
+import sultan.todoapp.featurenetwork.RemoteDataSource
 import sultan.todoapp.domain.network.NetworkResult
 
 class TodoItemsRepositoryImpl(
-    private val localDataSource: LocalDataSource,
-    private val remoteDataSource: RemoteDataSource
+    private val localDataSource: sultan.todoapp.featuredatabase.database.LocalDataSource,
+    private val remoteDataSource: sultan.todoapp.featurenetwork.RemoteDataSource
 ) : TodoItemsRepository {
 
     override suspend fun getItems(): Flow<NetworkResult> {
