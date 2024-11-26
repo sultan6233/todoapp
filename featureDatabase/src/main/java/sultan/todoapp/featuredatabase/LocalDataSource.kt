@@ -1,6 +1,8 @@
 package sultan.todoapp.featuredatabase
 
 import kotlinx.coroutines.flow.Flow
+import sultan.todoapp.domain.TodoItem
+import sultan.todoapp.domain.TodoItemsRepository
 import sultan.todoapp.domain.network.NetworkResult
 
 class LocalDataSource(private val db: AppDatabase) : TodoItemsRepository {
@@ -17,8 +19,20 @@ class LocalDataSource(private val db: AppDatabase) : TodoItemsRepository {
     }
 
     override suspend fun addItems(vararg todoItem: TodoItem): Result<Boolean> {
+        val todoItemEntity = todoItem.map {
+            TodoItemEntity(
+                id = it.id,
+                text = it.text,
+                importance = it.importance,
+                deadline = it.deadline,
+                isCompleted = it.isCompleted,
+                modifiedAt = it.modifiedAt,
+                createdAt = it.createdAt
+            )
+        }.toTypedArray()
+
         val dao = db.todoDao()
-        dao.insertAll(*todoItem)
+        dao.insertAll(*todoItemEntity)
         return Result.success(true)
     }
 

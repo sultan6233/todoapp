@@ -10,11 +10,11 @@ import sultan.todoapp.domain.TodoItem
 @Dao
 interface TodoDao {
     @Query("SELECT * FROM todoitementity")
-    fun getAll(): List<TodoItem>
+    fun getAll(): List<TodoItemEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertAll(vararg todoItemEntity: TodoItem)
+    fun insertAll(vararg todoItemEntity: TodoItemEntity)
 
     @Delete
-    fun delete(todoItemEntity: TodoItem)
+    fun delete(todoItemEntity: TodoItemEntity)
 }

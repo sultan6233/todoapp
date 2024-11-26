@@ -17,10 +17,9 @@ import kotlinx.coroutines.launch
 import sultan.todoapp.domain.TodoItem
 import sultan.todoapp.domain.TodoItemsRepository
 import sultan.todoapp.domain.network.NetworkResult
+import javax.inject.Inject
 
-class MainScreenViewModel(
-    private val todoRepository: TodoItemsRepository
-) : ViewModel() {
+class MainScreenViewModel @Inject constructor(private val todoRepository: TodoItemsRepository) : ViewModel() {
 
     private val _todoItems = MutableStateFlow<Map<String, TodoItem>>(mapOf())
     val todoItems: StateFlow<Map<String, TodoItem>> = _todoItems.asStateFlow()

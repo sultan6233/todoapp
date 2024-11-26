@@ -6,7 +6,7 @@ import androidx.room.TypeConverters
 import sultan.todoapp.featuredatabase.converters.Converters
 import sultan.todoapp.domain.TodoItem
 
-@Database(entities = [TodoItem::class], version = 1)
+@Database(entities = [TodoItemEntity::class], version = 1)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun todoDao(): TodoDao

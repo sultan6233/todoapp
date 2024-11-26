@@ -1,7 +1,9 @@
-package sultan.todoapp.domain
+package sultan.todoapp.featurenetwork
 
-import sultan.todoapp.data.network.models.ImportanceNetwork
-import sultan.todoapp.data.network.models.TodoItemNetwork
+import sultan.todoapp.domain.Importance
+import sultan.todoapp.domain.TodoItem
+import sultan.todoapp.featurenetwork.models.ImportanceNetwork
+import sultan.todoapp.featurenetwork.models.TodoItemNetwork
 import java.util.Date
 
 interface ITodoItemMapper {

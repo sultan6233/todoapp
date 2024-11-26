@@ -1,4 +1,4 @@
-package sultan.todoapp.data
+package sultan.todoapp.utils
 
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger

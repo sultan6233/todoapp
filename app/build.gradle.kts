@@ -1,7 +1,13 @@
+import com.android.build.gradle.internal.tasks.databinding.DataBindingGenBaseClassesTask
+import org.gradle.internal.extensions.stdlib.capitalized
+import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompileTool
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
     alias(libs.plugins.com.google.devtools.ksp)
+    id ("com.google.protobuf")
 }
 
 android {
@@ -37,12 +43,32 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
-    buildFeatures {
-        compose = true
+    protobuf {
+        protoc {
+            artifact = "com.google.protobuf:protoc:3.25.0"
+
+            generateProtoTasks {
+                all().forEach { task ->
+                    task.builtins {
+                        create("java") {
+                            option("lite")
+                        }
+                    }
+                }
+            }
+        }
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
+    androidComponents {
+        onVariants(selector().all()) { variant ->
+            afterEvaluate {
+                val capName = variant.name.capitalized()
+                tasks.getByName<KotlinCompile>("ksp${capName}Kotlin") {
+                    setSource(tasks.getByName("generate${capName}Proto").outputs)
+                }
+            }
+        }
     }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -52,8 +78,14 @@ android {
 
 dependencies {
     implementation(project(":domain"))
+    implementation(project(":featureDatabase"))
     implementation(project(":featureUi"))
+    implementation(project(":featureNetwork"))
+    implementation(project(":utils"))
+    implementation ("com.google.protobuf:protobuf-kotlin:3.21.2")
+    implementation (libs.dagger)
+    ksp (libs.dagger.compiler)
+    implementation(libs.kotlinx.serialization.json)
     implementation (libs.androidx.work.runtime.ktx)
-    implementation (libs.kotlinx.coroutines.android)
     implementation(libs.androidx.core.ktx)
 }

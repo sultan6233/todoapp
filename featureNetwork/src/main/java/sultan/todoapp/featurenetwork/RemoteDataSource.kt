@@ -6,11 +6,12 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.SerializationException
 import retrofit2.HttpException
-import sultan.todoapp.data.GlobalProperties.revision
+import sultan.todoapp.domain.TodoItem
+import sultan.todoapp.domain.TodoItemsRepository
 import sultan.todoapp.featurenetwork.mappers.TodoItemMapper
 import sultan.todoapp.featurenetwork.models.TodoItemPost
-import sultan.todoapp.domain.ITodoItemMapper
 import sultan.todoapp.domain.network.NetworkResult
+import sultan.todoapp.utils.GlobalProperties.revision
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 

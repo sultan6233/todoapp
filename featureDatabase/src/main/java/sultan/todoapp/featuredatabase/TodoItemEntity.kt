@@ -2,6 +2,7 @@ package sultan.todoapp.featuredatabase
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import sultan.todoapp.domain.Importance
 import java.util.Date
 
 @Entity

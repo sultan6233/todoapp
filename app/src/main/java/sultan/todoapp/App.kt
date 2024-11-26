@@ -5,8 +5,7 @@ import androidx.room.Room
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import sultan.todoapp.featuredatabase.database.AppDatabase
-import sultan.todoapp.ui.TodoItemsListUpdateWorker
+import sultan.todoapp.featuredatabase.AppDatabase
 import java.util.concurrent.TimeUnit
 
 class App : Application() {
@@ -31,7 +30,7 @@ class App : Application() {
     val db by lazy {
         Room.databaseBuilder(
             applicationContext,
-            sultan.todoapp.featuredatabase.database.AppDatabase::class.java, "todoitems_database"
+            AppDatabase::class.java, "todoitems_database"
         ).build()
     }
 

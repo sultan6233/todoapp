@@ -1,9 +1,11 @@
 package sultan.todoapp.featurenetwork.mappers
 
-import sultan.todoapp.data.GlobalProperties.deviceId
+import sultan.todoapp.domain.Importance
+import sultan.todoapp.domain.TodoItem
 import sultan.todoapp.featurenetwork.models.ImportanceNetwork
 import sultan.todoapp.featurenetwork.models.TodoItemNetwork
-import sultan.todoapp.domain.ITodoItemMapper
+import sultan.todoapp.featurenetwork.ITodoItemMapper
+import sultan.todoapp.utils.GlobalProperties.deviceId
 import java.util.Date
 
 class TodoItemMapper : ITodoItemMapper {
