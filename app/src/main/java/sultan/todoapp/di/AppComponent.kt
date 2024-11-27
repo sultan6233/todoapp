@@ -1,20 +1,18 @@
 package sultan.todoapp.di
 
 import dagger.Component
+import sultan.todoapp.di.modules.AppModule
 import sultan.todoapp.di.modules.DatabaseModule
 import sultan.todoapp.di.modules.NetworkModule
 import sultan.todoapp.di.modules.TodoRepositoryModule
-import sultan.todoapp.featureui.MainActivity
-import sultan.todoapp.featureui.viewmodels.AddTaskViewModel
-import sultan.todoapp.featureui.viewmodels.MainScreenViewModel
+import sultan.todoapp.domain.TodoItemsRepository
+import sultan.todoapp.featureui.ScreenComponent
 import javax.inject.Singleton
 
-//@Singleton
-//@Component(modules = [NetworkModule::class, DatabaseModule::class, TodoRepositoryModule::class])
-//interface AppComponent {
-//    fun inject(activity: MainActivity)
-//
-//    fun inject(viewModel: MainScreenViewModel)
-//
-//    fun inject(viewModel: AddTaskViewModel)
-//}
+@Singleton
+@Component(modules = [TodoRepositoryModule::class, DatabaseModule::class, NetworkModule::class, AppModule::class])
+interface AppComponent {
+    fun provideTodoItemsRepository(): TodoItemsRepository
+
+    fun screenComponentFactory(): ScreenComponent.Factory
+}

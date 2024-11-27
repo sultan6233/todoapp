@@ -21,9 +21,4 @@ object TodoRepositoryModule {
     ): TodoItemsRepository {
         return TodoItemsRepositoryImpl(localDataSource, remoteDataSource)
     }
-
-    @Provides
-    @Singleton
-    fun provideViewModel(repository: TodoItemsRepository): MainScreenViewModel =
-        MainScreenViewModel(repository)
 }

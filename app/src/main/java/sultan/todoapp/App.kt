@@ -1,17 +1,21 @@
 package sultan.todoapp
 
 import android.app.Application
-import androidx.room.Room
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import sultan.todoapp.featuredatabase.AppDatabase
+import sultan.todoapp.di.AppComponent
+import sultan.todoapp.di.DaggerAppComponent
+import sultan.todoapp.featureui.ScreenComponent
+import sultan.todoapp.featureui.ScreenComponentProvider
 import java.util.concurrent.TimeUnit
 
-class App : Application() {
+class App : Application(), ScreenComponentProvider {
+    lateinit var appComponent: AppComponent
     override fun onCreate() {
         super.onCreate()
         INSTANCE = this
+        appComponent = DaggerAppComponent.create()
         schedulePeriodicDataUpdate()
     }
 
@@ -31,5 +35,9 @@ class App : Application() {
     companion object {
         internal lateinit var INSTANCE: App
             private set
+    }
+
+    override fun provideScreenComponent(): ScreenComponent {
+        return appComponent.screenComponentFactory().create()
     }
 }

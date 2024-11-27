@@ -10,18 +10,15 @@ import sultan.todoapp.di.modules.TodoRepositoryModule
 import sultan.todoapp.featureui.viewmodels.MainScreenViewModel
 import javax.inject.Singleton
 
-@Component(
-    modules = [TodoRepositoryModule::class, DatabaseModule::class, NetworkModule::class, AppModule::class]
-)
-@Singleton
-interface MainScreenComponent {
-
-    @Component.Builder
-    interface Builder {
-        @BindsInstance
-        fun application(application: Application): Builder
-        fun build(): MainScreenComponent
-    }
-
-    fun getViewModel() : MainScreenViewModel
-}
+//@Component(
+//    modules = [TodoRepositoryModule::class, DatabaseModule::class, NetworkModule::class, AppModule::class]
+//)
+//@Singleton
+//interface MainScreenComponent {
+//    @Component.Builder
+//    interface Builder {
+//        fun build(): MainScreenComponent
+//    }
+//
+//    fun getViewModel() : MainScreenViewModel
+//}

@@ -18,10 +18,10 @@ import sultan.todoapp.domain.TodoItemsRepository
 import sultan.todoapp.domain.network.NetworkResult
 import java.util.Date
 import java.util.UUID
+import javax.inject.Inject
 
-class AddTaskViewModel(
-    private val todoItemsRepository: TodoItemsRepository
-) : ViewModel() {
+class AddTaskViewModel @Inject constructor(private val todoItemsRepository: TodoItemsRepository) :
+    ViewModel() {
 
     private val _isCheckBoxChecked = MutableStateFlow(false)
 

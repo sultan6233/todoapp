@@ -45,7 +45,6 @@ android {
 dependencies {
     implementation(project(":domain"))
     implementation (libs.dagger)
-    implementation(project(":app"))
     ksp (libs.dagger.compiler)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.navigation.compose)

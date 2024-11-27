@@ -11,7 +11,7 @@ import javax.inject.Singleton
 class NetworkModule {
     @Provides
     @Singleton
-    fun bindNetworkDataSource(): RemoteDataSource {
+    fun provideNetworkDataSource(): RemoteDataSource {
         return RemoteDataSource()
     }
 }
