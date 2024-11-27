@@ -27,12 +27,6 @@ class App : Application() {
         )
     }
 
-    val db by lazy {
-        Room.databaseBuilder(
-            applicationContext,
-            AppDatabase::class.java, "todoitems_database"
-        ).build()
-    }
 
     companion object {
         internal lateinit var INSTANCE: App

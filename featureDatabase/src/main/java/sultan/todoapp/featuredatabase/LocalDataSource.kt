@@ -4,8 +4,9 @@ import kotlinx.coroutines.flow.Flow
 import sultan.todoapp.domain.TodoItem
 import sultan.todoapp.domain.TodoItemsRepository
 import sultan.todoapp.domain.network.NetworkResult
+import javax.inject.Inject
 
-class LocalDataSource(private val db: AppDatabase) : TodoItemsRepository {
+class LocalDataSource @Inject constructor(private val db: AppDatabase) : TodoItemsRepository {
     override suspend fun getItems(): Flow<NetworkResult> {
         TODO()
     }

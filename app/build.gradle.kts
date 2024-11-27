@@ -1,6 +1,4 @@
-import com.android.build.gradle.internal.tasks.databinding.DataBindingGenBaseClassesTask
 import org.gradle.internal.extensions.stdlib.capitalized
-import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompileTool
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -83,6 +81,8 @@ dependencies {
     implementation(project(":featureNetwork"))
     implementation(project(":utils"))
     implementation ("com.google.protobuf:protobuf-kotlin:3.21.2")
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
     implementation (libs.dagger)
     ksp (libs.dagger.compiler)
     implementation(libs.kotlinx.serialization.json)

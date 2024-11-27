@@ -13,9 +13,10 @@ import sultan.todoapp.featurenetwork.models.TodoItemPost
 import sultan.todoapp.domain.network.NetworkResult
 import sultan.todoapp.utils.GlobalProperties.revision
 import java.io.IOException
+import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
-class RemoteDataSource : TodoItemsRepository {
+class RemoteDataSource @Inject constructor(): TodoItemsRepository {
     override suspend fun getItems() = flow {
         try {
             val mapper: ITodoItemMapper = TodoItemMapper()

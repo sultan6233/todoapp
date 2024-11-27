@@ -73,9 +73,9 @@ import java.util.Date
 
 
 @Composable
-fun AddTaskScreen(navController: NavHostController, id: String? = null) {
+fun AddTaskScreen(navController: NavHostController, id: String? = null, viewModel: AddTaskViewModel) {
     id?.let {
-        InitValuesForModifying(id, viewModel(), navController)
+        InitValuesForModifying(id, viewModel, navController)
     } ?: AddTaskContent(navController, null)
 }
 
@@ -510,7 +510,7 @@ fun AddTaskScreenPreview() {
 @Composable
 fun AddTaskLightPreview() {
     TodoAppTheme(darkTheme = false) {
-        AddTaskScreen(rememberNavController())
+        AddTaskScreen(rememberNavController(), viewModel = viewModel())
     }
 }
 
@@ -518,6 +518,6 @@ fun AddTaskLightPreview() {
 @Composable
 fun AddTaskDarkPreview() {
     TodoAppTheme(darkTheme = true) {
-        AddTaskScreen(rememberNavController())
+        AddTaskScreen(rememberNavController(), viewModel = viewModel())
     }
 }
