@@ -1,8 +1,11 @@
+import org.gradle.internal.extensions.stdlib.capitalized
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
     alias(libs.plugins.com.google.devtools.ksp)
-    alias(libs.plugins.compose.compiler)
+    id ("com.google.protobuf")
 }
 
 android {
@@ -38,12 +41,32 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
-    buildFeatures {
-        compose = true
+    protobuf {
+        protoc {
+            artifact = "com.google.protobuf:protoc:3.25.0"
+
+            generateProtoTasks {
+                all().forEach { task ->
+                    task.builtins {
+                        create("java") {
+                            option("lite")
+                        }
+                    }
+                }
+            }
+        }
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
+    androidComponents {
+        onVariants(selector().all()) { variant ->
+            afterEvaluate {
+                val capName = variant.name.capitalized()
+                tasks.getByName<KotlinCompile>("ksp${capName}Kotlin") {
+                    setSource(tasks.getByName("generate${capName}Proto").outputs)
+                }
+            }
+        }
     }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -52,32 +75,17 @@ android {
 }
 
 dependencies {
+    implementation(project(":domain"))
+    implementation(project(":featureDatabase"))
+    implementation(project(":featureUi"))
+    implementation(project(":featureNetwork"))
+    implementation(project(":utils"))
+    implementation ("com.google.protobuf:protobuf-kotlin:3.21.2")
     implementation(libs.androidx.room.runtime)
-    annotationProcessor(libs.androidx.room.compiler)
     ksp(libs.androidx.room.compiler)
-    implementation (libs.androidx.work.runtime.ktx)
-    implementation (libs.kotlinx.coroutines.android)
-    implementation(libs.retrofit)
-    implementation(libs.converter.gson)
-    implementation(libs.logging.interceptor)
-    implementation(libs.gson)
+    implementation (libs.dagger)
+    ksp (libs.dagger.compiler)
     implementation(libs.kotlinx.serialization.json)
+    implementation (libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.foundation)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 }
